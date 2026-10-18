@@ -1,7 +1,7 @@
 # Rebuilds rsrc_windows_{amd64,arm64}.syso: icons + manifest (as before) + a VERSIONINFO block, so Windows shows
 # product, description, version and copyright in the file's Properties.
 import struct,sys
-APP=sys.argv[1]; VER=(1,0,0,int(sys.argv[2]) if len(sys.argv)>2 else 0)
+APP=sys.argv[1]; VER=(1,0,1,int(sys.argv[2]) if len(sys.argv)>2 else 0)
 ico=open(APP+'/reactiodraw.ico','rb').read();_,_,n=struct.unpack('<HHH',ico[:6]);blobs=[]
 for i in range(n):
     w,h,c,r,pl,bpp,sz,off=struct.unpack('<BBBBHHII',ico[6+16*i:22+16*i]);blobs.append((w or 256,ico[off:off+sz]))

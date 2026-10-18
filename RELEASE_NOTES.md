@@ -1,6 +1,10 @@
-# Reactio Draw 1.0
+# Reactio Draw 1.0.1
 
-The first public version.
+## What changed since 1.0
+
+- Clean Up Reaction keeps conditions that are not one compound (Pd(PPh3)4, K2CO3; rt, 2 h) over or under the arrow, and the arrow grows to fit them; before, the product could land on top of such text.
+
+1.0 was the first public version.
 
 ## Downloads
 
