@@ -2046,7 +2046,7 @@ function render(){if(window.__rdSelHook)window.__rdSelHook();syncHapto();if(type
   for(const r of mol.arrows)if((r.kind==='shp'||r.kind==='orb'||r.kind==='img')&&!r.top)u+=arrowSVG(r);
   under.innerHTML=u;
   for(const b of mol.bonds){if(bondSel(b)){const A=atomById(b.a),B=atomById(b.b);s+=`<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" style="stroke:var(--accent-soft)" stroke-width="12" stroke-linecap="round"/>`;}}
-  for(const r of mol.arrows)if(selArr.has(r.id))s+=(r.kind==='pie'||r.kind==='radar')?(B=>`<rect x="${B.x0-6}" y="${B.y0-6}" width="${B.x1-B.x0+12}" height="${B.y1-B.y0+12}" fill="none" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`)(chartBox(r)):r.kind==='tbl'?`<rect x="${Math.min(r.x1,r.x2)-6}" y="${Math.min(r.y1,r.y2)-6}" width="${Math.abs(r.x2-r.x1)+12}" height="${Math.abs(r.y2-r.y1)+12}" fill="none" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`:r.kind==='brk'?brkParts(r).map(P=>`<polyline points="${P.map(q=>q.x+','+q.y).join(' ')}" fill="none" style="stroke:var(--accent-soft)" stroke-width="12" stroke-linecap="round"/>`).join(''):`<polyline points="${arrowPts(r,24).map(q=>q.x+','+q.y).join(' ')}" fill="none" style="stroke:var(--accent-soft)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>`;
+  for(const r of mol.arrows)if(selArr.has(r.id))s+=(r.kind==='pie'||r.kind==='radar')?(B=>`<rect x="${B.x0-6}" y="${B.y0-6}" width="${B.x1-B.x0+12}" height="${B.y1-B.y0+12}" fill="none" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`)(chartBox(r)):r.kind==='tbl'?`<rect x="${Math.min(r.x1,r.x2)-6}" y="${Math.min(r.y1,r.y2)-6}" width="${Math.abs(r.x2-r.x1)+12}" height="${Math.abs(r.y2-r.y1)+12}" fill="none" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`:r.kind==='orb'?'<g opacity=".55">'+orbParts(r).map(q=>q.circle?`<circle cx="${q.cx}" cy="${q.cy}" r="${q.R}" style="fill:var(--accent-soft);stroke:var(--accent-soft)" stroke-width="8"/>`:q.ring?`<ellipse cx="${q.cx}" cy="${q.cy}" rx="${q.rx}" ry="${q.ry}" transform="rotate(${q.ang} ${q.cx} ${q.cy})" style="fill:none;stroke:var(--accent-soft)" stroke-width="8"/>`:`<path d="${q.d}" style="fill:var(--accent-soft);stroke:var(--accent-soft)" stroke-width="8" stroke-linejoin="round"/>`).join('')+'</g>':r.kind==='brk'?brkParts(r).map(P=>`<polyline points="${P.map(q=>q.x+','+q.y).join(' ')}" fill="none" style="stroke:var(--accent-soft)" stroke-width="12" stroke-linecap="round"/>`).join(''):`<polyline points="${arrowPts(r,24).map(q=>q.x+','+q.y).join(' ')}" fill="none" style="stroke:var(--accent-soft)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>`;
   for(const t of mol.texts)if(selTxt.has(t.id))s+=`<rect x="${t.x-3}" y="${t.y-tSize(t)-2}" width="${textW(t)+6}" height="${tSize(t)+7+tExtra(t)}" rx="3" style="fill:var(--accent-soft)"/>`;
   for(const id of sel){const a=atomById(id);if(!a)continue;const L=labRect(a);
     s+=L?`<rect x="${L.x0.toFixed(1)}" y="${L.y0.toFixed(1)}" width="${(L.x1-L.x0).toFixed(1)}" height="${(L.y1-L.y0).toFixed(1)}" rx="${(L.y1-L.y0)/2}" style="fill:var(--accent-soft)"/>`:`<circle cx="${a.x}" cy="${a.y}" r="10" style="fill:var(--accent-soft)"/>`;}
@@ -2528,7 +2528,7 @@ let hot=null;const hotNow=()=>{if(hover&&(hover.atom||hover.bond))return hover;i
 function setHover(h){hover=h;if(typeof nmrSyncHover==='function'&&window.__nmrLast)nmrSyncHover();if(h&&h.atom)lastHoverAtom=h.atom;if(h&&(h.atom||h.bond))hot=h.atom?{atom:h.atom}:{bond:h.bond};
   {const dim=!(h&&(h.atom||h.bond||h.arrow))&&hotNow();if(dim)h=dim;hov.style.opacity=hovb.style.opacity=dim?'.45':'';}
   if(h&&h.atom){hov.setAttribute('cx',h.atom.x);hov.setAttribute('cy',h.atom.y);hov.setAttribute('visibility','visible');hovb.setAttribute('visibility','hidden');}
-  else if(h&&(h.bond||h.arrow)){let P;if(h.bond){const A=atomById(h.bond.a),B=atomById(h.bond.b);P=[A,B];}else P=h.arrow.kind==='tbl'?(()=>{const r=h.arrow;return [{x:r.x1,y:r.y1},{x:r.x1,y:r.y2},{x:r.x2,y:r.y2},{x:r.x2,y:r.y1},{x:r.x1,y:r.y1}];})():h.arrow.kind==='brk'?(()=>{const R=brkRect(h.arrow);return [{x:R.x0,y:R.y0},{x:R.x0,y:R.y1},{x:R.x1,y:R.y1},{x:R.x1,y:R.y0},{x:R.x0,y:R.y0}];})():arrowPts(h.arrow,24);
+  else if(h&&(h.bond||h.arrow)){let P;if(h.bond){const A=atomById(h.bond.a),B=atomById(h.bond.b);P=[A,B];}else P=h.arrow.kind==='tbl'?(()=>{const r=h.arrow;return [{x:r.x1,y:r.y1},{x:r.x1,y:r.y2},{x:r.x2,y:r.y2},{x:r.x2,y:r.y1},{x:r.x1,y:r.y1}];})():h.arrow.kind==='brk'?(()=>{const R=brkRect(h.arrow);return [{x:R.x0,y:R.y0},{x:R.x0,y:R.y1},{x:R.x1,y:R.y1},{x:R.x1,y:R.y0},{x:R.x0,y:R.y0}];})():h.arrow.kind==='orb'?orbHoverPts(h.arrow):arrowPts(h.arrow,24);
     hovb.setAttribute('points',P.map(q=>q.x+','+q.y).join(' '));hovb.setAttribute('visibility','visible');hov.setAttribute('visibility','hidden');}
   else{hov.setAttribute('visibility','hidden');hovb.setAttribute('visibility','hidden');}
   updateInfoWin();
@@ -7564,9 +7564,19 @@ function orbitalSVG(r,o){o=o||{};const col=r.col||'var(--ink)',aw=o.aw||(r.w||lw
     else s+=`<path d="${q.d}" style="fill:${f};stroke:${col}" ${mode==='f'?'fill-opacity="0.85"':''} stroke-width="${aw}" stroke-linejoin="round"/>`;}
   return s;}
 /* the ends of the orbitals' lobes (both ends of a p or dz² orbital, the big lobe of an sp³): lines are drawn between them */
-function orbTips(){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb==='s'||r.orb==='dxy')continue;const dx=r.x2-r.x1,dy=r.y2-r.y1;
-  out.push({x:r.x2,y:r.y2});if(r.orb==='p'||r.orb==='dz2')out.push({x:r.x1-dx,y:r.y1-dy});}return out;}
-function orbTipNear(p,tol,ex){let best=null,bd=tol;for(const t of orbTips()){if(ex&&Math.hypot(t.x-ex.x,t.y-ex.y)<1)continue;const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<bd){bd=d;best=t;}}return best;}
+function orbTips(){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb==='s')continue;const dx=r.x2-r.x1,dy=r.y2-r.y1;
+  if(r.orb==='dxy'){const L=Math.hypot(dx,dy)||1,a0=Math.atan2(dy,dx);for(let i=0;i<4;i++){const a=a0+i*Math.PI/2;out.push({x:r.x1+Math.cos(a)*L*0.9,y:r.y1+Math.sin(a)*L*0.9});}continue;}
+  out.push({x:r.x2,y:r.y2});if(r.orb==='p'||r.orb==='dz2')out.push({x:r.x1-dx,y:r.y1-dy});if(r.orb==='sp3')out.push({x:r.x1-dx*0.32,y:r.y1-dy*0.32});}return out;}
+/* the pointer's highlight of an orbital follows its lobes (a circle for s), not its box */
+function orbHoverPts(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,c={x:r.x1,y:r.y1},at=(a,k)=>({x:r.x1+Math.cos(a)*L*k,y:r.y1+Math.sin(a)*L*k}),a0=Math.atan2(uy,ux);
+  if(r.orb==='s'){const R=L*0.55,o=[];for(let i=0;i<=24;i++){const a=i/24*2*Math.PI;o.push({x:r.x1+Math.cos(a)*R,y:r.y1+Math.sin(a)*R});}return o;}
+  if(r.orb==='dxy')return [at(a0,0.8),c,at(a0+Math.PI/2,0.8),c,at(a0+Math.PI,0.8),c,at(a0-Math.PI/2,0.8)];
+  if(r.orb==='sp3')return [at(a0,0.85),at(a0+Math.PI,0.25)];
+  return [at(a0,0.85),at(a0+Math.PI,0.85)];}
+/* an s orbital has no tips: a line meets its circle at the point nearest the pointer */
+function orbSTips(p){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb!=='s')continue;const R=Math.hypot(r.x2-r.x1,r.y2-r.y1)*0.55,dx=p.x-r.x1,dy=p.y-r.y1,d=Math.hypot(dx,dy)||1;
+  out.push({x:r.x1+dx/d*R,y:r.y1+dy/d*R});}return out;}
+function orbTipNear(p,tol,ex){let best=null,bd=tol;for(const t of [...orbTips(),...orbSTips(p)]){if(ex&&Math.hypot(t.x-ex.x,t.y-ex.y)<1)continue;const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<bd){bd=d;best=t;}}return best;}
 /* ChemDraw's orbital types: s, p, hybrid (sp³), dz², dxy; Shaded is the phase-shaded drawing, Filled the filled one (ChemDraw has a shaded form
    only for s and p: the shaded hybrid and dz² are its Minus forms, the shaded dxy its Filled form); ChemDraw's lobe and oval read as sp³ and s */
 function cdxOrbType(r){const f=r.fill||'';const T={s:['s','sShaded','sFilled'],p:['p','pShaded','pFilled'],sp3:['hybridPlus','hybridMinus','hybridPlusFilled'],
