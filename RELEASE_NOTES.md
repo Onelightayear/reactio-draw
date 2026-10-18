@@ -12,7 +12,8 @@ The first public version.
 | `ReactioDraw-Linux-x64.tar.gz` | Linux on Intel or AMD: unpack, run `./install.sh` (needs WebKitGTK) |
 | `ReactioDraw-Linux-ARM.tar.gz` | Linux on ARM |
 | `ReactioDraw-Web.zip` | the browser version as one file, to keep offline |
-| `ReactioDraw-Source-*.zip` | the complete source of each version, buildable offline |
+
+The complete source code is the “Source code” archive GitHub attaches below: everything needed to build every version offline.
 
 Every download carries `Reactio Draw - Getting started.pdf` (every function and button explained) and `Reactio Draw - Hotkeys.reactio`, a one-page hotkey chart that opens in Reactio Draw.
 
