@@ -1,0 +1,136 @@
+package main
+
+// What the page asks the app for (window.rdNative.call on the page side; the same messages as the Mac app).
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"os"
+	"path/filepath"
+)
+
+type request struct {
+	ID   string `json:"id"`
+	Cmd  string `json:"cmd"`
+	Name string `json:"name"`
+	B64  string `json:"b64"`
+	Msg  string `json:"msg"`
+	Path string `json:"path"`
+}
+
+func reply(id string, v interface{}) {
+	if id == "" || id == "x" {
+		return
+	}
+	b, _ := json.Marshal(v)
+	args, _ := json.Marshal([]string{id, string(b)})
+	evalJS("window.__rdReply&&window.__rdReply.apply(null," + string(args) + ")")
+}
+
+/* replies from other goroutines go through the GTK thread */
+func replyLater(id string, v interface{}) { dispatch(func() { reply(id, v) }) }
+
+func handle(s string) {
+	var r request
+	if err := json.Unmarshal([]byte(s), &r); err != nil {
+		logf("bad message: %v", err)
+		return
+	}
+	b64 := func(t string) []byte { b, _ := base64.StdEncoding.DecodeString(t); return b }
+	switch r.Cmd {
+	case "save":
+		name := r.Name
+		if name == "" {
+			name = appName
+		}
+		p := fileDialog(true, "Save", name)
+		if p == "" {
+			reply(r.ID, map[string]interface{}{"ok": false})
+			return
+		}
+		if err := os.WriteFile(p, b64(r.B64), 0644); err != nil {
+			reply(r.ID, map[string]interface{}{"ok": false, "error": err.Error()})
+			return
+		}
+		allowPath(p)
+		reply(r.ID, map[string]interface{}{"ok": true, "path": p})
+	case "open":
+		p := fileDialog(false, "Open", "")
+		b, err := os.ReadFile(p)
+		if p == "" || err != nil {
+			reply(r.ID, map[string]interface{}{"cancel": true})
+			return
+		}
+		allowPath(p)
+		reply(r.ID, map[string]interface{}{"name": filepath.Base(p), "path": p, "b64": base64.StdEncoding.EncodeToString(b)})
+	case "saveAs":
+		name := r.Name
+		if name == "" {
+			name = appName + ".reactio"
+		}
+		p := fileDialog(true, "Save as", name)
+		allowPath(p)
+		reply(r.ID, map[string]interface{}{"path": p})
+	case "write":
+		if r.Path == "" {
+			reply(r.ID, map[string]interface{}{"ok": false, "err": "no file"})
+			return
+		}
+		if !pathAllowed(r.Path) {
+			logf("refused to write %s: not chosen by the user", r.Path)
+			reply(r.ID, map[string]interface{}{"ok": false, "ask": true})
+			return
+		}
+		tmp := r.Path + ".rdtmp"
+		if err := os.WriteFile(tmp, b64(r.B64), 0644); err != nil {
+			reply(r.ID, map[string]interface{}{"ok": false, "err": err.Error()})
+			return
+		}
+		if err := os.Rename(tmp, r.Path); err != nil {
+			os.Remove(tmp)
+			reply(r.ID, map[string]interface{}{"ok": false, "err": err.Error()})
+			return
+		}
+		reply(r.ID, map[string]interface{}{"ok": true})
+	case "quit":
+		reply(r.ID, map[string]interface{}{"ok": true})
+		app.quitOK = true
+		gtk_widget_destroy(app.win)
+	case "apiStart":
+		p := startLocalAPI()
+		reply(r.ID, map[string]interface{}{"ok": p > 0, "port": p})
+	case "apiStop":
+		stopLocalAPI()
+		reply(r.ID, map[string]interface{}{"ok": true})
+	case "apiResult":
+		apiDeliver(r.Name, r.Msg)
+		reply(r.ID, map[string]interface{}{"ok": true})
+	case "iupac":
+		go func(id, smi string) {
+			nm, code, msg := namerName(smi)
+			if code != "" {
+				replyLater(id, map[string]interface{}{"err": code, "msg": msg})
+				return
+			}
+			replyLater(id, map[string]interface{}{"name": nm})
+		}(r.ID, r.Name)
+	case "opsin":
+		go func(id, name string) {
+			smi, code, msg := opsinName(name)
+			if code != "" {
+				replyLater(id, map[string]interface{}{"err": code, "msg": msg})
+				return
+			}
+			replyLater(id, map[string]interface{}{"smiles": smi})
+		}(r.ID, r.Name)
+	case "cliDone":
+		cliDone(r.Msg)
+	case "log":
+		logf("page: %s", r.Msg)
+	case "clipown":
+		/* no Word objects on the Linux clipboard: the page pastes from its own clipboard data */
+		reply(r.ID, map[string]interface{}{})
+	default:
+		reply(r.ID, map[string]interface{}{"ok": false})
+	}
+}

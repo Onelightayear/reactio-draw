@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reactio Draw embedded</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;margin:16px;color:#1b2430;background:#fff}
+  iframe{width:100%;height:620px;border:1px solid #d5dbe3;border-radius:8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  input{flex:1;min-width:220px;font:14px ui-monospace,monospace;padding:6px 8px}
+  button{font:inherit;padding:6px 12px;cursor:pointer}
+  pre{background:#f4f6f9;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:240px;overflow:auto}
+</style>
+</head>
+<body>
+<h1>Reactio Draw in a page</h1>
+<p>An example of embedding (see EMBEDDING.md). Draw in the editor, or put a SMILES in and press Draw.</p>
+<div class="row">
+  <input id="smi" value="CC(=O)Oc1ccccc1C(=O)O" aria-label="SMILES">
+  <button id="draw">Draw</button>
+  <button id="getSmi">Get SMILES</button>
+  <button id="getMol">Get molfile</button>
+  <button id="list">Properties</button>
+  <button id="clear">Clear</button>
+</div>
+<!-- on GitHub Pages this is the editor next to this folder; elsewhere, use the full address -->
+<iframe id="rd" src="../web/index.html?embed" title="Reactio Draw"></iframe>
+<p>Live SMILES (follows every change): <code id="live">—</code></p>
+<pre id="out">Waiting for Reactio Draw…</pre>
+<script>
+const frame = document.getElementById('rd'), out = document.getElementById('out');
+let next = 0; const waiting = {};
+window.addEventListener('message', async e => {
+  if (e.source !== frame.contentWindow || !e.data || e.data.reactio !== 1) return;
+  const d = e.data;
+  if (d.event === 'ready') out.textContent = 'Ready. Commands: ' + d.ops.join(', ');
+  if (d.event === 'change') document.getElementById('live').textContent = (await rd('export', { format: 'smiles' })).smiles || '—';
+  if (d.id && waiting[d.id]) { waiting[d.id](d); delete waiting[d.id]; }
+});
+function rd(op, args) {
+  return new Promise((resolve, reject) => {
+    const id = ++next;
+    waiting[id] = d => d.ok ? resolve(d.result) : reject(new Error(d.error));
+    /* '*' lets this example run from any address; on your site put the editor's origin here */
+    frame.contentWindow.postMessage({ reactio: 1, id, op, args }, '*');
+  });
+}
+const show = p => p.then(r => out.textContent = typeof r === 'string' ? r : JSON.stringify(r, null, 2))
+                   .catch(e => out.textContent = 'Error: ' + e.message);
+document.getElementById('draw').onclick = () => show(rd('addSmiles', { smiles: document.getElementById('smi').value }));
+document.getElementById('getSmi').onclick = () => show(rd('export', { format: 'smiles' }).then(r => r.smiles));
+document.getElementById('getMol').onclick = () => show(rd('export', { format: 'mol' }).then(r => r.mol));
+document.getElementById('list').onclick = () => show(rd('list'));
+document.getElementById('clear').onclick = () => show(rd('clear'));
+</script>
+</body>
+</html>

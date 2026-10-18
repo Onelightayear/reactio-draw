@@ -1,0 +1,5 @@
+#!/bin/sh
+# Reactio Draw command line (reactio --help). Runs the program beside this script without a window.
+s="$0"; while [ -L "$s" ]; do t="$(readlink "$s")"; case "$t" in /*) s="$t";; *) s="$(dirname "$s")/$t";; esac; done
+d="$(cd "$(dirname "$s")" && pwd)"; p="$d/ReactioDraw"; [ -x "$p" ] || p="$d/ReactioDraw-ARM"
+exec "$p" --cli "$@"

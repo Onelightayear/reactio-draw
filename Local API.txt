@@ -1,0 +1,68 @@
+Reactio Draw — local API (Mac, Windows and Linux apps)
+
+While Reactio Draw is open, scripts on the same computer can send it commands over HTTP.
+The API is off until you turn it on: Info tab (right panel) → Local API. The choice is remembered; turn it
+off there again and nothing listens.
+It listens on 127.0.0.1 only (not reachable from other computers), and every request needs a token.
+It answers scripts on this computer only: requests a web browser sends for a page (they carry an Origin
+header) are refused, and the address must be 127.0.0.1 or localhost with the port from api.json.
+
+Where to find the port and token (the file exists only while the app runs):
+  Windows: %APPDATA%\ReactioDraw\api.json
+  Mac:     ~/Library/Application Support/ReactioDraw/api.json
+  Linux:   ~/.config/ReactioDraw/api.json
+It contains {"url": "http://127.0.0.1:47615/api", "token": "...", "port": 47615}.
+
+Request: POST <url>, header X-Reactio-Token: <token>, JSON body {"op": "<command>", "args": {...}}
+Answer:  {"ok": true, "result": ...}  or  {"ok": false, "error": "..."}
+
+Useful commands
+  calc            {"smiles": "CCO"}                      formula, charge, MW, exact mass, [M+H]+ (nothing is drawn)
+  smilesFromName  {"name": "2-acetyloxybenzoic acid"}    SMILES from a name (common names built in; others by OPSIN, which needs Java)
+  addName         {"name": "...", "x": 300, "y": 200}    draws the structure for a name
+  addSmiles       {"smiles": "...", "x": 300, "y": 200}  draws a SMILES (R/S from @/@@ become wedges; a CXSMILES
+                                                       part such as |&1:1| sets stereo groups)
+  name            {"index": 0}  or  {"smiles": "..."}    IUPAC name (openclatura; needs Python with openclatura),
+                                                         checkedByOpsin = the name reads back as the same structure
+  nmr             {"nucleus": "13C", "index": 0}  or  {"nucleus": "1H", "smiles": "..."}
+                                                         predicted shifts (1H, 13C, 19F, 31P) with typical errors (offline)
+  list, properties {"index": 0}, scheme, table, export {"format": "smiles|mol|sdf|rxn|cdxml|svg|json"}
+                                                         the structures, their properties, the scheme, the reagent table, a file
+  inchi           {"index": 0}  or  {"smiles": "..."}    InChI and InChIKey (InChI library, built in)
+  prefixStyle     {"mode": "plain|italic|sup"}         t, i, s, n of tBu, iPr… plain, italic or italic superscript
+  picture         {"scale": 1}                         the drawing as a PNG picture (base64)
+  set             {"text": "...", "format": "mol"}      replaces the whole drawing (format found from the text if left out)
+  image           {"text": "CCO", "output": "svg|png"}  a picture of any structure or reaction, the sheet untouched
+  selection, select {"index": 0} / {"all": true} / {}    what is selected; select structures, all, or nothing
+  atoms           {"index": 0}                         the atoms of a structure, numbered from 1
+  highlight       {"index": 0, "atoms": [1, 2], "color": "#ffcc00"}  colour atoms and their bonds ({"clear": true} removes)
+  check                                                valence errors, unreadable labels and structure checks
+                                                       (problems[].other: {n, element, issue, level}; level is err, warn
+                                                       or hint; ok is false only for errors and warnings)
+  saved, markSaved                                     unsaved changes?  /  mark as saved
+  zoom            {"value": 1.5} or {"fit": true}       zoom (1 = 100 %) or fit the drawing in the window
+  readOnly        {"on": true}                         view only (toolbars hidden, nothing can be changed)
+  addChart        {"slices": [{"label": "A", "value": 3}, {"label": "B", "value": 1}], "x": 300, "y": 200}
+                                                       a product-ratio chart (also size, hole, legend, percentages…)
+  addRadar        {"axes": [{"label": "H2O", "value": 80}, ...], "x": 300, "y": 200}
+                                                       a sensitivity screen (also size, min, max, step, shape, zones…)
+  addReaction, addText, import, delete, clear, undo, redo, clean, setStyle, setRole, setAmount, help
+  Every SMILES in the answers carries the drawn stereochemistry: @/@@ from wedges and hashes, / and \ for E/Z.
+
+For one-off jobs without the app open (pictures, conversion, checks), use the command line: "Command line.txt".
+
+Example (Python 3, no extra packages):
+
+  import json, os, pathlib, urllib.request
+  p = pathlib.Path(os.environ["APPDATA"]) / "ReactioDraw" / "api.json"            # Windows
+  # p = pathlib.Path.home() / "Library/Application Support/ReactioDraw/api.json"  # Mac
+  # p = pathlib.Path.home() / ".config/ReactioDraw/api.json"                     # Linux
+  info = json.loads(p.read_text())
+  def rd(op, **args):
+      req = urllib.request.Request(info["url"], json.dumps({"op": op, "args": args}).encode(),
+                                   {"X-Reactio-Token": info["token"], "Content-Type": "application/json"})
+      return json.load(urllib.request.urlopen(req))
+
+  print(rd("calc", smiles="CC(=O)Oc1ccccc1C(=O)O"))   # aspirin: C9H8O4, 180.159 ...
+  print(rd("addName", name="(2S)-2-aminopropanoic acid"))
+  print(rd("name", index=0))

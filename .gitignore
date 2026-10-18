@@ -1,0 +1,12 @@
+# build outputs
+windows-app/index.html
+windows-app/*.exe
+linux-app/index.html
+linux-app/ReactioDraw
+linux-app/ReactioDraw-ARM
+macapp/index.html
+macapp/opsin.jar
+*.zip
+*.tar.gz
+.DS_Store
+__pycache__/

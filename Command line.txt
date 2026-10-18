@@ -1,0 +1,46 @@
+Reactio Draw — command line (Windows, Mac and Linux apps)
+
+reactio runs Reactio Draw without a window: it reads the files you name, does the job and quits. It is the same
+program as the app (the same drawing, export and calculations), so it needs the app installed, but not open.
+Where it is:
+  Windows: reactio.exe in the "Reactio Draw" folder. Run it from that folder, or add the folder to PATH
+           (Start → "environment variables" → Path → New).
+  Mac:     inside the app: "/Applications/Reactio Draw.app/Contents/MacOS/reactio". The installer links it as
+           reactio when /usr/local/bin can be written; otherwise it prints the command that does it.
+  Linux:   ./reactio in the "Reactio Draw" folder; install.sh also links it into ~/.local/bin as reactio.
+           It needs WebKitGTK and a desktop session (on a server: xvfb-run reactio …).
+
+  reactio render  <input…> -o <out.svg|.png|.eps|.tiff | folder>   a picture of the drawing
+  reactio convert <input…> -o <out.reactio|.mol|.sdf|.rxn|.smi|.cdxml|.cdx|.json|.svg|.png|.eps|.tiff | folder>
+  reactio convert <input>  --format smi                             (no -o: text formats go to the screen)
+  reactio calc    <input…>     formula, Mol. Wt., exact mass, [M+H]+, elemental analysis of every structure
+  reactio nmr     <input>  [--nucleus 1H|13C|19F|31P]                predicted shifts (13C by default)
+  reactio inchi   <input…>     InChI and InChIKey
+  reactio check   <input…>     valence and drawing problems (exit code 3 when there are errors or warnings)
+  reactio name    <input…>     IUPAC name (needs Python with openclatura)
+  reactio smiles  <name…>      SMILES from a name (common names built in; others need Java for OPSIN)
+  reactio word-clean <file.docx> [-o <out.docx>]                   the Word file with plain vector pictures (no Reactio Draw data)
+  reactio op <command> ['{"json": "args"}'] [-i <input>]           any command of the local API (see Local API.txt)
+
+  <input> is a file (.reactio .mol .sdf .rxn .smi .cdxml .cdx .json) or a SMILES in quotes. A Word file (.docx) gives all its
+  drawings, one under another: reactio convert paper.docx -o all.cdxml
+  Options: -o, --output  file or folder;  --format  output format when -o is a folder (or for the screen);
+           --scale N  PNG size (3 by default);  --dpi N  TIFF resolution (600);  --style NAME  drawing style (ACS, Nature, RSC…);
+           --json  answers as JSON;  -h, --help  this text.
+  Exit codes: 0 done, 1 failed, 2 wrong command, 3 check found problems.
+
+Examples
+  reactio render scheme.cdxml -o scheme.png --scale 4
+  reactio render *.mol -o pictures/ --format svg          (one picture per file; the folder is made if needed)
+  reactio convert reaction.cdx -o reaction.rxn
+  reactio convert paper.docx -o paper.cdxml               (every structure of a Word file, one under another)
+  reactio word-clean paper.docx -o "paper (plain).docx"   (the same document with plain pictures)
+  reactio convert "CC(=O)Oc1ccccc1C(=O)O" --format mol > aspirin.mol
+  reactio calc compounds.sdf --json > properties.json
+  reactio nmr product.mol --nucleus 1H
+  reactio smiles "2-acetyloxybenzoic acid"
+  reactio check scheme.cdxml || echo "look at the drawing first"
+  reactio op atoms '{"index": 0}' -i product.mol         (on Windows cmd write the JSON as "{\"index\": 0}")
+
+reactio writes only the file or folder given after -o; anything else goes to the screen (stdout), and messages
+such as "wrote …" to stderr. Your open documents and settings are not touched.
