@@ -2917,6 +2917,10 @@ function cleanReaction(only){
   /* reagents written as text (MeCN, AcOH, NaOH…): left of the arrow they line up with the drawn reactants;
      written over or under the arrow they stay there (reagents above, solvent and conditions below) */
   const y=(ar.y1+ar.y2)/2,TXall=schemeOrder().list.filter(x=>!x.fr&&x.txt&&x.role!=='p');
+  /* conditions that are not one compound (Pd(PPh3)4, K2CO3; rt, 2 h) written over or under the arrow go with it too */
+  {const al=Math.hypot(ar.x2-ar.x1,ar.y2-ar.y1)||1,aux=(ar.x2-ar.x1)/al,auy=(ar.y2-ar.y1)/al;
+    for(const t of mol.texts){if(TXall.some(x=>x.txt===t)||/^[+\s]*$/.test(t.text||''))continue;const cx=t.x+textW(t)/2,cy=t.y-5,pr=(cx-ar.x1)*aux+(cy-ar.y1)*auy,pd=Math.abs((cx-ar.x1)*auy-(cy-ar.y1)*aux);
+      if(pr>=-10&&pr<=al+10&&pd<=60)TXall.push({txt:t,t:pr,role:'r'});}}
   const TX=TXall.filter(x=>x.t<0).map(x=>x.txt),cyT=x=>x.txt.y-5,TA=TXall.filter(x=>x.t>=0&&cyT(x)<y).sort((a,b)=>cyT(b)-cyT(a)).map(x=>[x.txt]),TB=TXall.filter(x=>x.t>=0&&cyT(x)>=y).sort((a,b)=>cyT(a)-cyT(b)).map(x=>[x.txt]);
   const tw=Math.max(0,...[...TA,...TB].map(f=>{const b=box(f);return b.x1-b.x0;}));
   const len=Math.max(tw?140:100,tw+60,Math.hypot(ar.x2-ar.x1,ar.y2-ar.y1));ar.y1=ar.y2=y;ar.x2=ar.x1+len;
