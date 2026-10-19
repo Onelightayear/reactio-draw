@@ -1,6 +1,6 @@
 # Reactio Draw 1.0.1
 
-## Changes being tested (after 1.0.1)
+## Changes since 1.0.1 (not released yet)
 
 - Top bar: a click on a group's grip ⋮ folds the group into one named menu (and back); Settings → Interface → Top bar → Compact puts everything but the file buttons into four menus in one row.
 - Arrows: while you drag, the arrow itself is shown, faint, with its curve and heads. Curved (mechanism) arrows start and end on an atom or the middle of a bond, a small gap off it (Settings → Drawing → Ends of curved arrows: touching, small or larger gap). At an atom with a label the arrow stops short of the letters.
