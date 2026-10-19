@@ -7660,7 +7660,12 @@ function orbHoverPts(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,u
 /* an s orbital has no tips: a line meets its circle at the point nearest the pointer */
 function orbSTips(p){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb!=='s')continue;const R=Math.hypot(r.x2-r.x1,r.y2-r.y1)*0.55,dx=p.x-r.x1,dy=p.y-r.y1,d=Math.hypot(dx,dy)||1;
   out.push({x:r.x1+dx/d*R,y:r.y1+dy/d*R});}return out;}
-function orbTipNear(p,tol,ex){let best=null,bd=tol;for(const t of [...orbTips(),...orbSTips(p)]){if(ex&&Math.hypot(t.x-ex.x,t.y-ex.y)<1)continue;const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<bd){bd=d;best=t;}}return best;}
+/* the middles of the lobes (a line may start inside a lobe, as in overlap diagrams) and the centre of an s orbital */
+function orbMids(){const out=[];for(const r of mol.arrows){if(r.kind!=='orb')continue;const dx=r.x2-r.x1,dy=r.y2-r.y1,at=(k,a)=>{const L=Math.hypot(dx,dy)||1,g=Math.atan2(dy,dx)+(a||0);return {x:r.x1+Math.cos(g)*L*k,y:r.y1+Math.sin(g)*L*k};};
+  if(r.orb==='s'){out.push({x:r.x1,y:r.y1});continue;}
+  if(r.orb==='dxy'){for(let i=0;i<4;i++)out.push(at(0.55,i*Math.PI/2));continue;}
+  out.push(at(0.6));if(r.orb==='p'||r.orb==='dz2')out.push(at(0.6,Math.PI));if(r.orb==='sp3')out.push(at(0.19,Math.PI));}return out;}
+function orbTipNear(p,tol,ex){let best=null,bd=tol;for(const t of [...orbTips(),...orbMids(),...orbSTips(p)]){if(ex&&Math.hypot(t.x-ex.x,t.y-ex.y)<1)continue;const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<bd){bd=d;best=t;}}return best;}
 /* ChemDraw's orbital types: s, p, hybrid (sp³), dz², dxy; Shaded is the phase-shaded drawing, Filled the filled one (ChemDraw has a shaded form
    only for s and p: the shaded hybrid and dz² are its Minus forms, the shaded dxy its Filled form); ChemDraw's lobe and oval read as sp³ and s */
 function cdxOrbType(r){let f=r.fill||'';if(f==='f'&&r.orb!=='s')f='ph';
