@@ -21,5 +21,32 @@ for old in web.glob("nmr-data.*.json"):
     old.unlink()
 (web / name).write_text(data, encoding="utf-8")
 meta = '<meta name="rd-nmr-pkg" content="%s" data-size="%.1f MB">' % (name, mb)
-(web / "index.html").write_text(page[:m.start()] + meta + page[m.end():], encoding="utf-8")
-print("web/index.html (%.1f MB) and web/%s (%.1f MB)" % ((m.start() + len(page) - m.end()) / 1e6, name, mb))
+page = page[:m.start()] + meta + page[m.end():]
+
+# Search engines and link previews (site only; web/og.png is the preview picture)
+URL = "https://paivel.github.io/reactio-draw/web/"
+TITLE = "Reactio Draw — free open-source chemical structure editor"
+DESC = ("Draw molecules and reactions in the browser: reagent tables, NMR prediction, HRMS check, "
+        "ChemDraw CDX/CDXML files. Free and open source, works offline.")
+head = "\n".join([
+    '<title>%s</title>' % TITLE,
+    '<meta name="description" content="%s">' % DESC,
+    '<link rel="canonical" href="%s">' % URL,
+    '<meta property="og:type" content="website">',
+    '<meta property="og:site_name" content="Reactio Draw">',
+    '<meta property="og:title" content="%s">' % TITLE,
+    '<meta property="og:description" content="%s">' % DESC,
+    '<meta property="og:url" content="%s">' % URL,
+    '<meta property="og:image" content="%sog.png">' % URL,
+    '<meta property="og:image:width" content="1280">',
+    '<meta property="og:image:height" content="640">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:title" content="%s">' % TITLE,
+    '<meta name="twitter:description" content="%s">' % DESC,
+    '<meta name="twitter:image" content="%sog.png">' % URL,
+])
+if page.count("<title>Reactio Draw</title>") != 1:
+    raise SystemExit("index.html: <title> not found")
+page = page.replace("<title>Reactio Draw</title>", head, 1)
+(web / "index.html").write_text(page, encoding="utf-8")
+print("web/index.html (%.1f MB) and web/%s (%.1f MB)" % (len(page.encode()) / 1e6, name, mb))
