@@ -407,6 +407,16 @@ html{scrollbar-color:var(--line) transparent}
   .pop:not([hidden]){animation:rdFadeIn .1s linear}
   .tb:active:not(:disabled),.btn:active:not(:disabled){transform:none}
 }
+
+/* top bar: folded groups (named menus) and the compact bar */
+.topbar>.tbg.folded{position:relative}
+.topbar .foldbtn{position:relative;padding:0 16px 0 9px;font:600 12.5px var(--sans);min-width:0}
+.foldbtn::after{content:'';position:absolute;right:3px;bottom:3px;border:3px solid transparent;border-right-color:currentColor;border-bottom-color:currentColor;opacity:.55}
+.foldpop{position:absolute;top:calc(100% + 6px);left:0;z-index:70;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 8px 24px rgb(0 0 0 / .18);display:flex;flex-wrap:wrap;gap:3px;align-items:center;width:max-content;max-width:360px}
+.foldpop[hidden]{display:none}
+.fsep{flex-basis:100%;height:1px;background:var(--line);margin:3px 0}
+.topbar>.tbg.rhide{display:none}
+.topbar.compact>.tbg.folded>.tgrip{display:none}.topbar.compact>.tbg.folded{padding-left:6px}
 </style>
 
 <div class="wrap">
@@ -588,6 +598,7 @@ html{scrollbar-color:var(--line) transparent}
         <polyline id="hovb" fill="none" style="stroke:var(--accent-soft)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" visibility="hidden"/>
         <g id="layer"></g>
         <line id="prev" style="stroke:var(--accent)" stroke-width="2" stroke-dasharray="4 3" visibility="hidden"/>
+        <g id="prevArr" style="pointer-events:none" opacity=".55" visibility="hidden"></g>
         <polyline id="prevc" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-dasharray="4 3" visibility="hidden"/>
         <text id="prevn" style="fill:var(--accent);font:600 13px var(--mono)" visibility="hidden"></text>
         <g id="ghost" style="pointer-events:none" opacity=".5"></g>
@@ -744,6 +755,9 @@ html{scrollbar-color:var(--line) transparent}
         <div class="setg"><label class="tlabel" for="escApply">Esc keeps the typed text</label>
           <input type="checkbox" id="escApply" class="tgl" role="switch">
           <p class="note">On: Esc finishes a text or an atom label you are typing and keeps it, the same as Enter. Off: Esc throws the typing away.</p></div>
+        <div class="setg"><label class="tlabel" for="topbarMode">Top bar</label>
+          <select id="topbarMode" style="width:100%;padding:4px 6px;font-size:13px"><option value="full">Full: every button visible</option><option value="compact">Compact: File, then four menus</option></select>
+          <p class="note">Full shows every group of buttons; a click on a group's ⋮ folds it into one menu, and another click unfolds it. Compact keeps the File buttons and puts the rest into four menus in one row: Arrange, Structure, Style and Text.</p></div>
         <h3 class="shead">Drawing</h3>
         <div class="setg"><label class="tlabel" for="elGrpSel">NMe, NBoc, SiMe2 typed on an atom in a chain or ring</label>
           <select id="elGrpSel" style="width:100%;padding:4px 6px;font-size:13px"><option value="label">One label: the group beside the atom (N over Me)</option><option value="bond">On a bond: the group on its own bond (N–Me)</option></select>
@@ -751,6 +765,9 @@ html{scrollbar-color:var(--line) transparent}
         <div class="setg"><label class="tlabel" for="pfxSel">t, i, s, n in groups (tBu, iPr, sBu, nBu)</label>
           <div class="row" style="align-items:center;flex-wrap:nowrap;gap:8px"><select id="pfxSel" style="flex:1;padding:4px 6px;font-size:13px"><option value="plain">Leave plain: tBu</option><option value="italic">Italic: 𝑡Bu</option><option value="sup">Italic superscript: ᵗBu</option></select><button class="btn ghost sm" id="pfxApply">Apply to selection</button></div>
           <p class="note">How the prefix letter of tBu, iPr, sBu, nBu, OtBu, CO2tBu is written. New labels you type follow it; Apply to selection changes the labels of the selected structures (the whole sheet when nothing is selected).</p></div>
+        <div class="setg"><label class="tlabel" for="mechGap">Ends of curved arrows</label>
+          <select id="mechGap" style="width:100%;padding:4px 6px;font-size:13px"><option value="0">Touch the atom or bond</option><option value="5">Small gap</option><option value="9">Larger gap</option></select>
+          <p class="note">How far a curved (mechanism) arrow drawn from or to an atom or the middle of a bond stays off it. An atom with a label always keeps at least a small gap, so the head does not run into its letters. Arrows already drawn keep their ends.</p></div>
         <h3 class="shead">Warnings</h3>
         <div class="setg"><label class="row" style="font-size:12.5px;flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="valMarks" style="width:auto;flex:none;margin-top:3px"> Mark valence errors on the structure</label>
           <p class="note">On by default: an atom over or short of its normal valence gets a red dashed ring. Turned off, the rings are gone from the sheet, but the Analysis tab and the API op check still report the errors. The rings never appear in copies or exports either way.</p></div>
@@ -2034,7 +2051,7 @@ function syncHapto(){for(const a of mol.atoms)if(a.multi){const R=a.multi.map(id
     /* the ring's edges nearer the viewer are drawn thick, as a ring seen in perspective */
     const ids=new Set(R.map(q=>q.id));for(const b of mol.bonds){if(!ids.has(b.a)||!ids.has(b.b))continue;const A=R.find(q=>q.id===b.a),B=R.find(q=>q.id===b.b);
       if(a.z!==undefined&&A.z!==undefined&&(A.z+B.z)/2>a.z+L*0.05)b.hapFront=true;else delete b.hapFront;}}}}
-function render(){if(window.__rdSelHook)window.__rdSelHook();syncHapto();if(typeof uiTheme!=='undefined'&&uiTheme==='paper')syncUiTheme();errAtoms=valErrs();ionLabels();CHGPOS.clear();CHGIDX=null;DECPOS.length=0;try{syncDepth3D();}catch(e){}
+function render(){if(window.__rdSelHook)window.__rdSelHook();orbFollow();syncHapto();if(typeof uiTheme!=='undefined'&&uiTheme==='paper')syncUiTheme();errAtoms=valErrs();ionLabels();CHGPOS.clear();CHGIDX=null;DECPOS.length=0;try{syncDepth3D();}catch(e){}
   let u='',s='';const ink='style="stroke:var(--ink)"';
   mol.fills=mol.fills.filter(f=>f.ids.every(id=>atomById(id)));
   for(const f of mol.fills){const pts=f.ids.map(id=>{const a=atomById(id);return a.x+','+a.y;}).join(' ');u+=`<polygon points="${pts}" fill="${f.color}" fill-opacity=".28"/>`;}
@@ -3133,9 +3150,13 @@ svg.addEventListener('pointermove',e=>{
     const last=pts[pts.length-1];prevn.textContent=pts.length+(drag.start?0:1);prevn.setAttribute('x',last.x+8);prevn.setAttribute('y',last.y-8);prevn.setAttribute('visibility','visible');}
   else if(drag.mode&&drag.mode.startsWith('pen')){penMove(p,e);}
   else if(drag.mode==='arrow'){
-    let g=Math.atan2(p.y-s.y,p.x-s.x);if(!(curArrow.curve||e.altKey||freeBond))g=Math.round(g/(Math.PI/12))*(Math.PI/12);const l=Math.max(curArrow.curve?6:30,dist(s,p));
-    drag.end={x:s.x+l*Math.cos(g),y:s.y+l*Math.sin(g)};
-    prev.setAttribute('x1',s.x);prev.setAttribute('y1',s.y);prev.setAttribute('x2',drag.end.x);prev.setAttribute('y2',drag.end.y);prev.setAttribute('visibility','visible');}
+    if(curArrow.curve){/* curved (electron) arrows: makeArrow puts the ends on the atom or bond middle under them; the ring marks it */
+      drag.end={x:p.x,y:p.y};const tn=mechSnap(p);
+      if(tn.obj){prevt.setAttribute('cx',tn.x);prevt.setAttribute('cy',tn.y);prevt.setAttribute('visibility','visible');}else prevt.setAttribute('visibility','hidden');}
+    else{let g=Math.atan2(p.y-s.y,p.x-s.x);if(!(e.altKey||freeBond))g=Math.round(g/(Math.PI/12))*(Math.PI/12);const l=Math.max(30,dist(s,p));
+    drag.end={x:s.x+l*Math.cos(g),y:s.y+l*Math.sin(g)};}
+    /* the preview is the arrow itself, faint: the same curve, heads and style as the one the release puts down */
+    const nx=mol.next,A=makeArrow(s,drag.end);mol.next=nx;const pa=$('prevArr');pa.innerHTML=arrowSVG(A);pa.setAttribute('visibility','visible');}
 });
 function scrubAt(p){let n=0;for(let k=0;k<6;k++){const h=hitAt(p);if(!h)break;n++;
     if(h.atom){eraseAtom(h.atom);}else if(h.bond)eraseBond(h.bond);else if(h.arrow)mol.arrows=mol.arrows.filter(x=>x!==h.arrow);else if(h.text)mol.texts=mol.texts.filter(x=>x!==h.text);}
@@ -3143,7 +3164,7 @@ function scrubAt(p){let n=0;for(let k=0;k<6;k++){const h=hitAt(p);if(!h)break;n+
 function endDrag(ev){if(isTouchPtr(ev)){touchUp(ev);return;}
   if(!drag)return;const d=drag;drag=null;svg.classList.remove('pan');
   if(d.mode==='scrub'){if(d.n)commit();else undoSt.pop();return;}
-  for(const el of [prev,prevc,prevn,prevt,marq,lassoEl])el.setAttribute('visibility','hidden');
+  for(const el of [prev,prevc,prevn,prevt,marq,lassoEl,$('prevArr')])el.setAttribute('visibility','hidden');
   if(d.mode==='lasso'){if(d.moved&&d.pts.length>2){const P=d.pts,inP=(x,y)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;}return c;};
       for(const a of mol.atoms)if(inP(a.x,a.y)){sel.add(a.id);atomOnly.delete(a.id);}
       for(const r of mol.arrows){let b=null;try{b=arrowBox(r);}catch(e){}if(inP(r.x1,r.y1)&&inP(r.x2,r.y2)||b&&isFinite(b.x0)&&inP(b.x0,b.y0)&&inP(b.x1,b.y0)&&inP(b.x0,b.y1)&&inP(b.x1,b.y1))selArr.add(r.id);}
@@ -3210,7 +3231,7 @@ function endDrag(ev){if(isTouchPtr(ev)){touchUp(ev);return;}
     commit();}
 }
 svg.addEventListener('pointerup',endDrag);
-svg.addEventListener('pointercancel',e=>{if(isTouchPtr(e)){TOUCHP.delete(e.pointerId);touchStart();return;}drag=null;svg.classList.remove('pan');for(const el of [prev,prevc,prevn,prevt,marq,lassoEl])el.setAttribute('visibility','hidden');});
+svg.addEventListener('pointercancel',e=>{if(isTouchPtr(e)){TOUCHP.delete(e.pointerId);touchStart();return;}drag=null;svg.classList.remove('pan');for(const el of [prev,prevc,prevn,prevt,marq,lassoEl,$('prevArr')])el.setAttribute('visibility','hidden');});
 svg.addEventListener('dblclick',e=>{if(lastPtrType==='touch'||lastPtrType==='pen')return;if(tool==='pen'){penFinish();return;}const p=pt(e);{const tc=tblCellAt(p);if(tc){openTblEdit(tc);return;}}{const ha=findArrow(p);if(ha&&!ha.kind&&!findAtom(p,10)){if(isRxnArrow(ha)){selectReaction(ha);return;}clearSel();selArr.add(ha.id);setTool('select',true);render();updateInfo();syncStyle();return;}if(ha&&ha.kind==='pie'){openPieEd(ha);return;}if(ha&&ha.kind==='radar'){openRadEd(ha);return;}}
   if(tool==='bond'){const now=Date.now();const n=clickLog.filter(c=>now-c.t<700).length;if(n){const id=clickLog[clickLog.length-1].id;for(let i=0;i<n;i++)undo();clickLog=[];redoSt.length=0;
     const a=atomById(id);if(a){setTimeout(()=>dblLabel(a),0);return;}}}
@@ -3478,7 +3499,7 @@ function pasteClip(){if(!clip)return;snap();clip.n++;const map={};clearSel();
   const po=pasteOffset(),dx=po?po.x:30*clip.n,dy=po?po.y:30*clip.n;
   for(const a of clip.atoms){const na=newAtom(a.x+dx,a.y+dy,a.el);na.chg=a.chg||0;na.hl=a.hl;if(a.cs)na.cs=a.cs;if(a.cang!==undefined)na.cang=a.cang;if(a.cpos)na.cpos={...a.cpos};for(const k of ['back','blur'])if(a[k])na[k]=a[k];if(a.mark){for(const k of ['mark','markSt','mFill','mOp','mDash','mW','mOl'])if(a[k]!=null)na[k]=a[k];}if(a.label){na.label=a.label;if(a.grp)na.grp=a.grp;}for(const k of ['rad','lp','att','hm','col','fs','ss','showC','sty','font','z','nd','fade'])if(a[k]!=null&&na[k]==null)na[k]=JSON.parse(JSON.stringify(a[k]));if(a.dpos)na.dpos=JSON.parse(JSON.stringify(a.dpos));map[a.id]=na;sel.add(na.id);}
   for(const b of clip.bonds)mol.bonds.push({...b,id:mol.next++,a:map[b.a].id,b:map[b.b].id});
-  for(const r of clip.arrows||[]){const o={...r,id:mol.next++,x1:r.x1+dx,y1:r.y1+dy,x2:r.x2+dx,y2:r.y2+dy};mol.arrows.push(o);selArr.add(o.id);}
+  for(const r of clip.arrows||[]){const o={...r,id:mol.next++,x1:r.x1+dx,y1:r.y1+dy,x2:r.x2+dx,y2:r.y2+dy};if(o.at!=null){if(map[o.at])o.at=map[o.at].id;else delete o.at;}mol.arrows.push(o);selArr.add(o.id);}
   for(const t of clip.texts||[]){const o={...t,id:mol.next++,x:t.x+dx,y:t.y+dy};
     if(t.ana){const ids=t.ana.atoms.map(i=>map[i]&&map[i].id).filter(Boolean);if(ids.length)o.ana={...t.ana,atoms:ids};else delete o.ana;}
     if(t.cnum){const ids=t.cnum.atoms.map(i=>map[i]&&map[i].id).filter(Boolean);if(ids.length)o.cnum={...t.cnum,atoms:ids};else delete o.cnum;}
@@ -3919,7 +3940,7 @@ function syncTools(){
     text:'Click to type. Text that reads as a formula or a known name (MeMgBr, K2CO3, Pd(PPh3)4, CuSO4·5H2O, THF, NBS) gets a dotted underline and becomes a column in the grid; captions such as "85 °C, 2 h" stay plain text. Enter saves, Esc cancels.',
     rot3d:'Drag a structure to rotate it in 3D: left-right turns it about the vertical axis, up-down about the horizontal one. With a selection, the selected structures turn together. Wedges and hashes follow the rotation.',
     hand:'Drag to move the view. Ctrl + mouse wheel zooms; the middle mouse button moves the view with any tool.',
-    orbital:'Click an atom to put an orbital on it, or drag from the atom to set its size and direction. Click the tool again for s, p, sp³, dxy and dz² orbitals. With Select, the outer handle turns and resizes it.',
+    orbital:'Click an atom to put an orbital on it, or drag from the atom to set its size and direction. Click the tool again for s, p, sp³, dxy and dz² orbitals. An orbital on an atom moves with it. With Select, the round handle turns it about the atom and the square one changes its size.',
     shape:'Drag to draw the shape (Shift: circle or square). Click the tool again for the shape menu. With Select, corner handles resize it; the Fill button sets its color and opacity.',
     bracket:'Drag a box around a structure for a pair of brackets, or up/down for a single one. Click the tool again for [ ] ( ) { } ‡ † and the charge corner ⌉. With Select, the corner handles resize it.',
     cutRad:'Draw a line across one or more bonds: they break, and each end becomes a radical.',cutRetro:'Draw a line across one or more bonds: the molecule stays, and its pieces appear after a retrosynthetic arrow as neutral molecules (the broken ends take hydrogens).',cutFwd:'Draw a line across one or more bonds: the molecule stays, and its pieces appear before a reaction arrow pointing to it, as neutral molecules.',
@@ -6165,7 +6186,7 @@ function importCdxml0(text){
   /* orbitals: the box runs from the lobe's end to the centre */
   for(const g of doc.querySelectorAll('graphic[GraphicType="Orbital"]')){const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;
     const o=orbOfCdx(g.getAttribute('OrbitalType')||'p');if(!o)continue;let x2=v[0]*k+ox,y2=v[1]*k;const x1=v[2]*k+ox,y1=v[3]*k;
-    if(o.orb==='s'){x2=x1+(x2-x1)/0.55;y2=y1+(y2-y1)/0.55;}const r={id:mol.next++,kind:'orb',orb:o.orb,x1,y1,x2,y2};if(o.fill)r.fill=o.fill;mol.arrows.push(r);}
+    if(o.orb==='s'){x2=x1+(x2-x1)/0.55;y2=y1+(y2-y1)/0.55;}const r={id:mol.next++,kind:'orb',orb:o.orb,x1,y1,x2,y2};if(o.fill)r.fill=o.fill;{const at=findAtom({x:x1,y:y1},1.5);if(at)r.at=at.id;}mol.arrows.push(r);}
   /* a lone C–C bond whose ends sit on two orbital tips is the overlap line ChemDraw users draw with the bond tool: it comes in as a plain line, not as ethane */
   for(const b of mol.bonds.slice()){const A=atomById(b.a),B=atomById(b.b);if(!A||!B||A.label||B.label||A.el!=='C'||B.el!=='C'||bondsOf(A).length!==1||bondsOf(B).length!==1)continue;
     const ta=orbTipNear(A,8),tb=orbTipNear(B,8);if(!ta||!tb)continue;mol.bonds.splice(mol.bonds.indexOf(b),1);mol.atoms.splice(mol.atoms.indexOf(A),1);mol.atoms.splice(mol.atoms.indexOf(B),1);
@@ -6953,27 +6974,60 @@ setArrowIcon();
 document.querySelector('[data-tool=arrow]').addEventListener('click',e=>{if(e.isTrusted){setTimeout(()=>{if(arrowPop.hidden)showArrowPop();else arrowPop.hidden=true;},0);}});
 document.addEventListener('pointerdown',e=>{if(!arrowPop.hidden&&!e.target.closest('#arrowpop')&&!e.target.closest('[data-tool=arrow]'))arrowPop.hidden=true;});
 /* snapping the ends of curved (mechanism) arrows to atoms and bonds */
-function mechSnap(p,other){const a=findAtom(p,14);if(a)return {x:a.x,y:a.y,obj:true};
-  const b=mol.bonds.find(x=>{const A=atomById(x.a),B=atomById(x.b);return segDist(p,A.x,A.y,B.x,B.y)<7;});if(b){const A=atomById(b.a),B=atomById(b.b);return {x:(A.x+B.x)/2,y:(A.y+B.y)/2,obj:true};}return {x:p.x,y:p.y};}
+/* the gap set in Settings → Drawing → Ends of curved arrows (0: the tip touches) */
+function mechGap(){let g=0;try{g=+(localStorage.getItem('rd-mechgap')||0);}catch(e){}return g>0?g:0;}
+/* the box of the letters an atom shows (its label, or the element with its implicit H), as labRect measures labels */
+function atomTextBox(a){if(!labeled(a))return null;const R=labRect(a);if(R)return R;const h=implicitH(a)||0,n=a.el.length+(h?1:0)+(h>1?1:0)+(a.chg?1:0);
+  const K=labK(a),w=(n*8.6+6)*K,x0=labRightOf(a,neighbors(a))?a.x+6-w:a.x-6;return {x0:x0-2,x1:x0+w+2,y0:a.y-10*K,y1:a.y+10*K};}
+function mechSnap(p,other){const a=findAtom(p,14);if(a)return {x:a.x,y:a.y,obj:true,gap:mechGap(),box:atomTextBox(a)};
+  const b=mol.bonds.find(x=>{const A=atomById(x.a),B=atomById(x.b);return segDist(p,A.x,A.y,B.x,B.y)<7;});if(b){const A=atomById(b.a),B=atomById(b.b);return {x:(A.x+B.x)/2,y:(A.y+B.y)/2,obj:true,gap:mechGap()};}return {x:p.x,y:p.y};}
+{const m=$('mechGap');if(m){m.value=String(mechGap());m.addEventListener('change',()=>{try{localStorage.setItem('rd-mechgap',m.value);}catch(e){}});}}
 function makeArrow(s,e){const t=curArrow,r={id:mol.next++,x1:s.x,y1:s.y,x2:e.x,y2:e.y};for(const k of ARROW_KEYS)if(t[k]!==undefined&&t[k]!=='none'&&t[k]!==0&&!(k==='shaft'&&t[k]==='solid')&&!(k==='head'&&t[k]==='full')&&!(k==='hs'&&t[k]===1))r[k]=t[k];
   if(t.head==='none')r.head='none';
-  if(t.curve){/* mechanism arrows: start and end on atoms/bonds, pulled back a little so they do not touch the labels */
-    const A=mechSnap(s),B=mechSnap(e);const dx=B.x-A.x,dy=B.y-A.y,l=Math.hypot(dx,dy)||1;const pull=Math.min(10,l/4);
-    r.x1=A.x+(A.obj?dx/l*pull:0);r.y1=A.y+(A.obj?dy/l*pull:0);r.x2=B.x-(B.obj?dx/l*pull:0);r.y2=B.y-(B.obj?dy/l*pull:0);
-    if(Math.abs(t.curve)>300){/* circular arrows keep a small chord */const c=12;r.x2=r.x1+dx/l*c;r.y2=r.y1+dy/l*c;}}
+  if(t.curve){/* mechanism arrows: the ends sit on the atom or the bond's middle itself (the tip touches it);
+       only an atom with a label keeps the end off its letters */
+    const A=mechSnap(s),B=mechSnap(e);r.x1=A.x;r.y1=A.y;r.x2=B.x;r.y2=B.y;
+    /* a gap is taken off the arc itself: the ends slide back along the same circle, so the arrow keeps its bow and stands off
+       the atom or bond instead of sliding along the bond */
+    const ga=A.gap||0,gb=B.gap||0,C=(ga||gb||A.box||B.box)&&Math.abs(t.curve)<=300?arcInfo(r):null;
+    if(C&&C.R>0){const sg=Math.sign(C.D)||1,sweep=Math.abs(C.D),cut=Math.min((ga+gb)/C.R,sweep*0.6),f=(ga+gb)?cut/((ga+gb)/C.R):1;let ca=ga/C.R*f,cb=gb/C.R*f;
+      /* an end at an atom that shows letters is shortened along the arc until it is clear of them (and the chosen gap past them) */
+      const inBox=(B0,ang,m)=>{const x=C.cx+C.R*Math.cos(ang),y=C.cy+C.R*Math.sin(ang);return x>B0.x0-m&&x<B0.x1+m&&y>B0.y0-m&&y<B0.y1+m;},st=0.5/C.R,lim=sweep*0.45;
+      if(A.box){let k=0;while(k<lim&&inBox(A.box,C.a1+sg*k,2.5+ga))k+=st;ca=Math.max(ca,k);}
+      if(B.box){let k=0;while(k<lim&&inBox(B.box,C.a1+C.D-sg*k,2.5+gb))k+=st;cb=Math.max(cb,k);}
+      const a1=C.a1+sg*ca,a2=C.a1+C.D-sg*cb,am=(a1+a2)/2,want={x:C.cx+C.R*Math.cos(am),y:C.cy+C.R*Math.sin(am)};
+      r.x1=C.cx+C.R*Math.cos(a1);r.y1=C.cy+C.R*Math.sin(a1);r.x2=C.cx+C.R*Math.cos(a2);r.y2=C.cy+C.R*Math.sin(a2);
+      const deg=(sweep-ca-cb)*180/Math.PI;let best=r.curve,bd=1e9;
+      for(const k of [1,-1]){r.curve=k*deg;const N=arcInfo(r);if(!N)continue;const m={x:N.cx+N.R*Math.cos(N.a1+N.D/2),y:N.cy+N.R*Math.sin(N.a1+N.D/2)},d=Math.hypot(m.x-want.x,m.y-want.y);if(d<bd){bd=d;best=k*deg;}}
+      r.curve=+best.toFixed(2);}
+    if(Math.abs(t.curve)>300){/* circular arrows keep a small chord */const c=12,dx=B.x-A.x,dy=B.y-A.y,l=Math.hypot(dx,dy)||1;r.x2=r.x1+dx/l*c;r.y2=r.y1+dy/l*c;}}
   return r;}
 /* handles on a single selected arrow: ends move freely, the middle one bends it */
 function arrowHandles(r){if(r.kind==='img'&&r.rot){const P=imgCorners(r);return {e1:P[0],e2:P[2],m:{x:(P[0].x+P[2].x)/2,y:(P[0].y+P[2].y)/2}};}const P=arrowPts(r,24),m=r.curve?P[Math.floor(P.length/2)]:{x:(r.x1+r.x2)/2,y:(r.y1+r.y2)/2};
   if(r.curve&&r.sq)return {e1:P[0],e2:P[P.length-1],m};return {e1:{x:r.x1,y:r.y1},e2:{x:r.x2,y:r.y2},m};}
 function bendable(r){return !r.kind&&(!r.shaft||r.shaft==='solid'||r.shaft==='dashed');}
 function soloArrow(){if(selArr.size!==1||sel.size||selTxt.size)return null;return mol.arrows.find(r=>selArr.has(r.id))||null;}
-function handlesSVG(){const r=soloArrow();if(!r||!isSelTool()||r.kind==='tbl')return '';const H=arrowHandles(r);let s='';
+/* an orbital has two handles: the round one beyond its tip turns it about its atom (the size stays), the square one at the tip
+   makes it bigger or smaller (the direction stays); an s orbital only has the square one */
+function orbHandles(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,k=r.orb==='s'?0.55:r.orb==='dxy'?0.9:1;
+  const sz={x:r.x1+ux*L*k,y:r.y1+uy*L*k};return r.orb==='s'?{sz}:{sz,rot:{x:sz.x+ux*16,y:sz.y+uy*16}};}
+function handlesSVG(){const r=soloArrow();if(!r||!isSelTool()||r.kind==='tbl')return '';
+  if(r.kind==='orb'){const H=orbHandles(r);let s='';
+    if(H.rot)s+=`<line x1="${H.sz.x}" y1="${H.sz.y}" x2="${H.rot.x}" y2="${H.rot.y}" style="stroke:var(--accent)" stroke-width="1"/><circle cx="${H.rot.x}" cy="${H.rot.y}" r="5" style="fill:var(--panel);stroke:var(--accent)" stroke-width="1.6"><title>Drag to turn the orbital about its atom; the size stays (Shift: 15° steps)</title></circle>`;
+    s+=`<rect x="${H.sz.x-4.5}" y="${H.sz.y-4.5}" width="9" height="9" style="fill:var(--accent);stroke:var(--panel)" stroke-width="1.2"><title>Drag to make the orbital bigger or smaller; the direction stays</title></rect>`;return s;}
+  const H=arrowHandles(r);let s='';
   for(const k of ['e1','e2'])s+=`<circle cx="${H[k].x}" cy="${H[k].y}" r="5" style="fill:var(--panel);stroke:var(--accent)" stroke-width="1.6"><title>Drag to lengthen, shorten or turn the arrow. On a curved arrow the end slides along its circle or oval (up to a full ring); hold Alt to move it freely</title></circle>`;
   if(bendable(r))s+=`<rect x="${H.m.x-4.5}" y="${H.m.y-4.5}" width="9" height="9" transform="rotate(45 ${H.m.x} ${H.m.y})" style="fill:var(--accent);stroke:var(--panel)" stroke-width="1.2"><title>Drag sideways to bend the arrow; drag back onto the line to straighten it</title></rect>`;
   return s;}
-function hitHandle(p){const r=soloArrow();if(!r||r.kind==='tbl')return null;const H=arrowHandles(r);
+function hitHandle(p){const r=soloArrow();if(!r||r.kind==='tbl')return null;
+  if(r.kind==='orb'){const H=orbHandles(r);if(H.rot&&Math.hypot(p.x-H.rot.x,p.y-H.rot.y)<7)return {r,k:'orot'};if(Math.hypot(p.x-H.sz.x,p.y-H.sz.y)<7)return {r,k:'osz'};return null;}
+  const H=arrowHandles(r);
   if(bendable(r)&&Math.hypot(p.x-H.m.x,p.y-H.m.y)<8)return {r,k:'m'};for(const k of ['e1','e2'])if(Math.hypot(p.x-H[k].x,p.y-H[k].y)<8)return {r,k};return null;}
 function dragHandle(d,p,shift,alt){const r=d.r;
+  if(d.k==='orot'||d.k==='osz'){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1;
+    if(d.k==='orot'){let g=Math.atan2(p.y-r.y1,p.x-r.x1);if(shift)g=Math.round(g/(Math.PI/12))*(Math.PI/12);r.x2=r.x1+L*Math.cos(g);r.y2=r.y1+L*Math.sin(g);}
+    else{const k=r.orb==='s'?0.55:r.orb==='dxy'?0.9:1,t=((p.x-r.x1)*dx+(p.y-r.y1)*dy)/L/k,nl=Math.max(6,t);r.x2=r.x1+dx/L*nl;r.y2=r.y1+dy/L*nl;}
+    render();return;}
   /* Alt on the middle handle of a curved arrow: press the circle into an oval (or back); the oval is kept when the arrow is lengthened */
   if(false&&alt&&d.k==='m'&&r.curve){if(!d.sq){const A=arcInfo(r),P=arrowPts(r,24),m=P[Math.floor(P.length/2)];d.sq={cx:A.cx,cy:A.cy,R:A.R,a:Math.atan2(m.y-A.cy,m.x-A.cx)};}
     const C=d.sq,s=((p.x-C.cx)*Math.cos(C.a)+(p.y-C.cy)*Math.sin(C.a))/C.R;let k=Math.max(0.15,Math.min(1,Math.abs(s)));if(shift)k=Math.round(k*10)/10;
@@ -7543,39 +7597,51 @@ function smartSnap(o,dx,dy){const b=boxOfSnap(o,dx,dy);if(!b)return null;const m
 function dupSelection(){const map=new Map();const na=[],nb=[],nr=[],nt=[];
   for(const a of mol.atoms)if(sel.has(a.id)){const c={...JSON.parse(JSON.stringify(a)),id:mol.next++};map.set(a.id,c.id);na.push(c);}
   for(const b of mol.bonds)if(map.has(b.a)&&map.has(b.b))nb.push({...JSON.parse(JSON.stringify(b)),id:mol.next++,a:map.get(b.a),b:map.get(b.b)});
-  for(const r of mol.arrows)if(selArr.has(r.id))nr.push({...JSON.parse(JSON.stringify(r)),id:mol.next++});
+  for(const r of mol.arrows)if(selArr.has(r.id)){const c={...JSON.parse(JSON.stringify(r)),id:mol.next++};if(c.at!=null){if(map.has(c.at))c.at=map.get(c.at);else delete c.at;}nr.push(c);}
   for(const t of mol.texts)if(selTxt.has(t.id)||cnumWith(t,sel)){const c={...JSON.parse(JSON.stringify(t)),id:mol.next++};if(c.cnum){const ids=c.cnum.atoms.map(i=>map.get(i)).filter(Boolean);if(ids.length)c.cnum.atoms=ids;else delete c.cnum;}nt.push(c);}
   const gmap=new Map();for(const o of [...na,...nr,...nt])if(o.gid!=null){if(!gmap.has(o.gid))gmap.set(o.gid,mol.next++);o.gid=gmap.get(o.gid);}
   mol.atoms.push(...na);mol.bonds.push(...nb);mol.arrows.push(...nr);mol.texts.push(...nt);clearSel();na.forEach(a=>sel.add(a.id));nr.forEach(r=>selArr.add(r.id));nt.forEach(t=>selTxt.add(t.id));}
 
 /* ===== orbitals: s, p, sp3, dxy, dz2 — outline or with phase shading; centre on an atom, the second handle sets size and direction ===== */
-const ORB_TPL=[['s',''],['s','f'],['p',''],['p','ph'],['p','f'],['sp3',''],['sp3','ph'],['dxy',''],['dxy','ph'],['dz2',''],['dz2','ph']].map(([o,f])=>({orb:o,fill:f}));
-let curOrb=ORB_TPL[3];
-function lobePath(cx,cy,ux,uy,L,w){const nx=-uy,ny=ux,P=(a,b)=>`${(cx+ux*a+nx*b).toFixed(2)},${(cy+uy*a+ny*b).toFixed(2)}`;
-  return `M${P(0,0)} C${P(L*0.22,w*1.15)} ${P(L*1.08,w*0.95)} ${P(L,0)} C${P(L*1.08,-w*0.95)} ${P(L*0.22,-w*1.15)} ${P(0,0)}Z`;}
-function orbParts(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,w=L*0.42,cx=r.x1,cy=r.y1,out=[];
+/* the palette: s (empty, filled), dxy, a single lobe (filled, empty), dz² (ring filled, lobes filled), p, sp³ (big lobe filled, small lobe filled) */
+const ORB_TPL=[['s',''],['s','f'],['dxy','ph'],['lobe','ph'],['lobe',''],['dz2','phi'],['dz2','ph'],['p','ph'],['sp3','ph'],['sp3','phi']].map(([o,f])=>({orb:o,fill:f}));
+let curOrb=ORB_TPL[7];
+/* one lobe: a teardrop, pointed at the nucleus and round at the far end (both curves meet there square to the axis, so
+   the outline has no notch); about 0.28 of its length wide on each side, widest near 0.7 of the way out. f widens or narrows it */
+function lobePath(cx,cy,ux,uy,L,f=1){const nx=-uy,ny=ux,P=(a,b)=>`${(cx+ux*a+nx*b).toFixed(2)},${(cy+uy*a+ny*b).toFixed(2)}`;
+  return `M${P(0,0)} C${P(L*0.3,L*0.25*f)} ${P(L,L*0.48*f)} ${P(L,0)} C${P(L,-L*0.48*f)} ${P(L*0.3,-L*0.25*f)} ${P(0,0)}Z`;}
+function orbParts(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,cx=r.x1,cy=r.y1,out=[];
   if(r.orb==='s')return [{circle:true,cx,cy,R:L*0.55,phase:true}];
-  if(r.orb==='p'){/* rounder lobes for a p orbital */out.push({d:lobePath(cx,cy,ux,uy,L,w*1.2),phase:true},{d:lobePath(cx,cy,-ux,-uy,L,w*1.2),phase:false});}
-  if(r.orb==='sp3'){out.push({d:lobePath(cx,cy,ux,uy,L,w*1.15),phase:true},{d:lobePath(cx,cy,-ux,-uy,L*0.32,w*0.45),phase:false});}
-  if(r.orb==='dxy'){const k=Math.SQRT1_2;for(let i=0;i<4;i++){const a=Math.atan2(uy,ux)+i*Math.PI/2;out.push({d:lobePath(cx,cy,Math.cos(a),Math.sin(a),L*0.9,w*0.7),phase:i%2===0});}}
-  if(r.orb==='dz2'){out.push({d:lobePath(cx,cy,ux,uy,L,w*0.85),phase:true},{d:lobePath(cx,cy,-ux,-uy,L,w*0.85),phase:true},{ring:true,cx,cy,rx:L*0.55,ry:L*0.18,ang:Math.atan2(uy,ux)*180/Math.PI+90,phase:false});}
+  if(r.orb==='lobe')out.push({d:lobePath(cx,cy,ux,uy,L),phase:true});
+  if(r.orb==='p')out.push({d:lobePath(cx,cy,ux,uy,L),phase:true},{d:lobePath(cx,cy,-ux,-uy,L),phase:false});
+  if(r.orb==='sp3')out.push({d:lobePath(cx,cy,ux,uy,L,1.15),phase:true},{d:lobePath(cx,cy,-ux,-uy,L*0.32,1.3),phase:false});
+  if(r.orb==='dxy'){for(let i=0;i<4;i++){const a=Math.atan2(uy,ux)+i*Math.PI/2;out.push({d:lobePath(cx,cy,Math.cos(a),Math.sin(a),L*0.9,0.95),phase:i%2===0});}}
+  if(r.orb==='dz2'){out.push({d:lobePath(cx,cy,ux,uy,L,0.95),phase:true},{d:lobePath(cx,cy,-ux,-uy,L,0.95),phase:true},{ring:true,cx,cy,rx:L*0.6,ry:L*0.16,ang:Math.atan2(uy,ux)*180/Math.PI+90,phase:false});}
   return out;}
-function orbitalSVG(r,o){o=o||{};const col=r.col||'var(--ink)',aw=o.aw||(r.w||lwOf(r)*0.8),mode=r.fill||'',paper=o.paper||'var(--panel)';let s='';
-  const fillOf=ph=>mode==='f'?col:mode==='ph'&&ph?col:paper;
-  for(const q of orbParts(r)){const f=fillOf(q.phase);
-    if(q.circle)s+=`<circle cx="${q.cx}" cy="${q.cy}" r="${q.R}" style="fill:${mode?f:paper};stroke:${col}" ${mode==='f'?'fill-opacity="0.85"':''} stroke-width="${aw}"/>`;
-    else if(q.ring)s+=`<ellipse cx="${q.cx}" cy="${q.cy}" rx="${q.rx}" ry="${q.ry}" transform="rotate(${q.ang} ${q.cx} ${q.cy})" style="fill:${mode==='ph'?paper:f};stroke:${col}" stroke-width="${aw}"/>`;
-    else s+=`<path d="${q.d}" style="fill:${f};stroke:${col}" ${mode==='f'?'fill-opacity="0.85"':''} stroke-width="${aw}" stroke-linejoin="round"/>`;}
+/* fill: '' outline only; 'ph' the lobes of one phase solid, the others empty (CDX Filled); 'phi' the other phase solid
+   (the small lobe of an sp³, the ring of a dz²); 'sh' the first phase shaded with a highlight, as a lit sphere (CDX
+   Shaded); 'f' a solid s orbital (on other orbitals, as 'ph') */
+function orbitalSVG(r,o){o=o||{};const col=r.col||'var(--ink)',aw=o.aw||(r.w||lwOf(r)*0.8),paper=o.paper||'var(--panel)';let s='';
+  let mode=r.fill||'';if(mode==='f'&&r.orb!=='s')mode='ph';
+  let gid='';if(mode==='sh'){gid='og'+(o.gid||r.id||'i');s+=`<defs><radialGradient id="${gid}" cx="40%" cy="38%" r="65%" fx="32%" fy="30%"><stop offset="0" stop-color="#ffffff"/><stop offset=".12" stop-color="#ffffff"/><stop offset=".55" style="stop-color:${col}" stop-opacity=".55"/><stop offset=".9" style="stop-color:${col}"/></radialGradient></defs>`;}
+  const fillOf=ph=>mode==='phi'?(ph?paper:col):!ph?paper:mode==='f'||mode==='ph'?col:mode==='sh'?`url(#${gid})`:paper;
+  for(const q of orbParts(r)){const f=fillOf(q.phase),fa=f.startsWith('url(')?`fill="${f}" style="stroke:${col}"`:`style="fill:${f};stroke:${col}"`;
+    if(q.circle)s+=`<circle cx="${q.cx}" cy="${q.cy}" r="${q.R}" ${fa} stroke-width="${aw}"/>`;
+    else if(q.ring)s+=`<ellipse cx="${q.cx}" cy="${q.cy}" rx="${q.rx}" ry="${q.ry}" transform="rotate(${q.ang} ${q.cx} ${q.cy})" style="fill:${mode==='phi'?col:paper};stroke:${col}" stroke-width="${aw}"/>`;
+    else s+=`<path d="${q.d}" ${fa} stroke-width="${aw}" stroke-linejoin="round"/>`;}
+  /* a dz² with empty ring: the ring passes behind the first lobe, so that lobe is drawn again over it */
+  if(r.orb==='dz2'&&mode!=='phi'){const q=orbParts(r)[0],f=fillOf(true),fa=f.startsWith('url(')?`fill="${f}" style="stroke:${col}"`:`style="fill:${f};stroke:${col}"`;s+=`<path d="${q.d}" ${fa} stroke-width="${aw}" stroke-linejoin="round"/>`;}
   return s;}
 /* the ends of the orbitals' lobes (both ends of a p or dz² orbital, the big lobe of an sp³): lines are drawn between them */
 function orbTips(){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb==='s')continue;const dx=r.x2-r.x1,dy=r.y2-r.y1;
   if(r.orb==='dxy'){const L=Math.hypot(dx,dy)||1,a0=Math.atan2(dy,dx);for(let i=0;i<4;i++){const a=a0+i*Math.PI/2;out.push({x:r.x1+Math.cos(a)*L*0.9,y:r.y1+Math.sin(a)*L*0.9});}continue;}
-  out.push({x:r.x2,y:r.y2});if(r.orb==='p'||r.orb==='dz2')out.push({x:r.x1-dx,y:r.y1-dy});if(r.orb==='sp3')out.push({x:r.x1-dx*0.32,y:r.y1-dy*0.32});}return out;}
+  out.push({x:r.x2,y:r.y2});if(r.orb==='lobe')continue;if(r.orb==='p'||r.orb==='dz2')out.push({x:r.x1-dx,y:r.y1-dy});if(r.orb==='sp3')out.push({x:r.x1-dx*0.32,y:r.y1-dy*0.32});}return out;}
 /* the pointer's highlight of an orbital follows its lobes (a circle for s), not its box */
 function orbHoverPts(r){const dx=r.x2-r.x1,dy=r.y2-r.y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,c={x:r.x1,y:r.y1},at=(a,k)=>({x:r.x1+Math.cos(a)*L*k,y:r.y1+Math.sin(a)*L*k}),a0=Math.atan2(uy,ux);
   if(r.orb==='s'){const R=L*0.55,o=[];for(let i=0;i<=24;i++){const a=i/24*2*Math.PI;o.push({x:r.x1+Math.cos(a)*R,y:r.y1+Math.sin(a)*R});}return o;}
   if(r.orb==='dxy')return [at(a0,0.8),c,at(a0+Math.PI/2,0.8),c,at(a0+Math.PI,0.8),c,at(a0-Math.PI/2,0.8)];
   if(r.orb==='sp3')return [at(a0,0.85),at(a0+Math.PI,0.25)];
+  if(r.orb==='lobe')return [c,at(a0,0.85)];
   return [at(a0,0.85),at(a0+Math.PI,0.85)];}
 /* an s orbital has no tips: a line meets its circle at the point nearest the pointer */
 function orbSTips(p){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||r.orb!=='s')continue;const R=Math.hypot(r.x2-r.x1,r.y2-r.y1)*0.55,dx=p.x-r.x1,dy=p.y-r.y1,d=Math.hypot(dx,dy)||1;
@@ -7583,16 +7649,21 @@ function orbSTips(p){const out=[];for(const r of mol.arrows){if(r.kind!=='orb'||
 function orbTipNear(p,tol,ex){let best=null,bd=tol;for(const t of [...orbTips(),...orbSTips(p)]){if(ex&&Math.hypot(t.x-ex.x,t.y-ex.y)<1)continue;const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<bd){bd=d;best=t;}}return best;}
 /* ChemDraw's orbital types: s, p, hybrid (sp³), dz², dxy; Shaded is the phase-shaded drawing, Filled the filled one (ChemDraw has a shaded form
    only for s and p: the shaded hybrid and dz² are its Minus forms, the shaded dxy its Filled form); ChemDraw's lobe and oval read as sp³ and s */
-function cdxOrbType(r){const f=r.fill||'';const T={s:['s','sShaded','sFilled'],p:['p','pShaded','pFilled'],sp3:['hybridPlus','hybridMinus','hybridPlusFilled'],
-  dz2:['dz2Plus','dz2Minus','dz2PlusFilled'],dxy:['dxy','dxyFilled','dxyFilled']}[r.orb];return T?T[f==='ph'?1:f==='f'?2:0]:null;}
+function cdxOrbType(r){let f=r.fill||'';if(f==='f'&&r.orb!=='s')f='ph';
+  /* CDX: Shaded = lit (gradient) lobe, Filled = solid lobe; Plus/Minus name which phase is filled (the big lobe of a
+     hybrid, the lobes of a dz²; Minus the small lobe or the ring). Shaded exists for s, lobe and p only: others go as Filled */
+  const T={s:{'':'s',sh:'sShaded',f:'sFilled',ph:'sFilled'},lobe:{'':'lobe',sh:'lobeShaded',ph:'lobeFilled'},p:{'':'p',sh:'pShaded',ph:'pFilled'},
+    sp3:{'':'hybridPlus',sh:'hybridPlusFilled',ph:'hybridPlusFilled',phi:'hybridMinusFilled'},dz2:{'':'dz2Plus',sh:'dz2PlusFilled',ph:'dz2PlusFilled',phi:'dz2MinusFilled'},
+    dxy:{'':'dxy',sh:'dxyFilled',ph:'dxyFilled'}}[r.orb];return T?T[f]||T.ph||T['']:null;}
 function orbOfCdx(t){const m=/^(s|oval|lobe|p|hybridPlus|hybridMinus|dz2Plus|dz2Minus|dxy)(Shaded|Filled)?$/.exec(t);if(!m)return null;
-  const orb={s:'s',oval:'s',lobe:'sp3',p:'p',hybridPlus:'sp3',hybridMinus:'sp3',dz2Plus:'dz2',dz2Minus:'dz2',dxy:'dxy'}[m[1]];
-  const fill=m[2]==='Shaded'||/Minus$/.test(m[1])&&!m[2]?'ph':m[2]==='Filled'?(m[1]==='dxy'?'ph':'f'):'';return fill?{orb,fill}:{orb};}
+  const orb={s:'s',oval:'s',lobe:'lobe',p:'p',hybridPlus:'sp3',hybridMinus:'sp3',dz2Plus:'dz2',dz2Minus:'dz2',dxy:'dxy'}[m[1]];
+  const minus=/Minus$/.test(m[1]);
+  const fill=m[2]==='Shaded'?'sh':m[2]==='Filled'?(orb==='s'?'f':minus?'phi':'ph'):minus?'ph':'';return fill?{orb,fill}:{orb};}
 function orbBox(r){const L=Math.hypot(r.x2-r.x1,r.y2-r.y1);return {x0:r.x1-L*1.1,x1:r.x1+L*1.1,y0:r.y1-L*1.1,y1:r.y1+L*1.1};}
-function orbIcon(t){const r={...t,x1:17,y1:12,x2:17+(t.orb==='s'?14:t.orb==='dxy'?7:0),y2:12-(t.orb==='s'?0:t.orb==='dxy'?7:10)};if(t.orb==='sp3'){r.x1=12;r.y1=15;r.x2=24;r.y2=6;}
+function orbIcon(t){const r={...t,x1:17,y1:12,x2:17+(t.orb==='s'?14:t.orb==='dxy'?7:0),y2:12-(t.orb==='s'?0:t.orb==='dxy'?7:10)};if(t.orb==='sp3'||t.orb==='lobe'){r.x1=t.orb==='lobe'?17:12;r.y1=t.orb==='lobe'?21:15;r.x2=t.orb==='lobe'?17:24;r.y2=t.orb==='lobe'?3:6;}
   return `<svg viewBox="0 0 34 24" width="34" height="24">${orbitalSVG({...r,col:'currentColor'},{aw:1.1,paper:'transparent'})}</svg>`;}
 const orbPop=document.createElement('div');orbPop.className='pop arrowpop orbpop';orbPop.id='orbpop';orbPop.hidden=true;
-orbPop.innerHTML='<span class="ttl">Orbitals</span>'+ORB_TPL.map((t,i)=>`<button type="button" data-orb="${i}" title="${t.orb} orbital${t.fill==='ph'?', phase shaded':t.fill==='f'?', filled':''}">${orbIcon(t)}</button>`).join('');
+orbPop.innerHTML='<span class="ttl">Orbitals</span>'+ORB_TPL.map((t,i)=>`<button type="button" data-orb="${i}" title="${t.orb==='lobe'?'Lobe':t.orb+' orbital'}${t.orb==='sp3'?(t.fill==='phi'?', small lobe filled':', big lobe filled'):t.orb==='dz2'?(t.fill==='phi'?', ring filled':', lobes filled'):t.fill==='ph'||t.fill==='f'?', filled':t.fill==='sh'?', shaded':''}">${orbIcon(t)}</button>`).join('');
 document.querySelector('.editor').appendChild(orbPop);
 function syncOrbPop(){orbPop.querySelectorAll('[data-orb]').forEach(b=>b.setAttribute('aria-pressed',ORB_TPL[+b.dataset.orb]===curOrb));const tb=document.querySelector('[data-tool=orbital]');if(tb)tb.innerHTML=orbIcon(curOrb).replace('width="34" height="24"','width="22" height="22"').replace('viewBox="0 0 34 24"','viewBox="5 0 24 24"');}
 orbPop.addEventListener('click',e=>{const b=e.target.closest('[data-orb]');if(!b)return;curOrb=ORB_TPL[+b.dataset.orb];syncOrbPop();orbPop.hidden=true;setTool('orbital');});
@@ -7605,8 +7676,11 @@ syncOrbPop();
 const ORB_LEN=o=>o==='s'?L*0.4:L*0.6;
 function placeOrbital(p0,p1,free){const a=findAtom(p0,14);const c=a?{x:a.x,y:a.y}:p0;let tip;const len=ORB_LEN(curOrb.orb);
   if(p1&&Math.hypot(p1.x-c.x,p1.y-c.y)>8){if(free)tip=p1;else{let g=Math.atan2(p1.y-c.y,p1.x-c.x);g=Math.round(g/(Math.PI/12))*(Math.PI/12);tip={x:c.x+len*Math.cos(g),y:c.y+len*Math.sin(g)};}}
-  else{const ang=a&&curOrb.orb==='sp3'?freeAngles(a,1)[0]:-Math.PI/2;tip={x:c.x+len*Math.cos(ang),y:c.y+len*Math.sin(ang)};}
-  snap();const r={id:mol.next++,kind:'orb',orb:curOrb.orb,x1:c.x,y1:c.y,x2:tip.x,y2:tip.y};if(curOrb.fill)r.fill=curOrb.fill;mol.arrows.push(r);commit();}
+  else{const ang=a&&(curOrb.orb==='sp3'||curOrb.orb==='lobe')?freeAngles(a,1)[0]:-Math.PI/2;tip={x:c.x+len*Math.cos(ang),y:c.y+len*Math.sin(ang)};}
+  snap();const r={id:mol.next++,kind:'orb',orb:curOrb.orb,x1:c.x,y1:c.y,x2:tip.x,y2:tip.y};if(curOrb.fill)r.fill=curOrb.fill;if(a)r.at=a.id;mol.arrows.push(r);commit();}
+/* an orbital put on an atom stays on it: when the atom moves, the orbital moves with it (same size and direction) */
+function orbFollow(){for(const r of mol.arrows){if(r.kind!=='orb'||r.at==null)continue;const a=atomById(r.at);if(!a){delete r.at;continue;}
+  const dx=a.x-r.x1,dy=a.y-r.y1;if(dx||dy){r.x1+=dx;r.y1+=dy;r.x2+=dx;r.y2+=dy;}}}
 ACTIONS.push({id:'tool:orbital',ctx:'tool',label:'Orbital tool',def:''});TARGET.orbital='[data-tool=orbital]';
 
 /* ===== settings export / import: hotkeys, button layout, my structures, my abbreviations ===== */
@@ -8519,6 +8593,51 @@ document.addEventListener('dragend',()=>{dragUnit=null;document.querySelectorAll
 try{const G=JSON.parse(localStorage.getItem('rd-groups')||'null');if(G){(G.left||[]).forEach(k=>{const u=unitEls(k);if(u&&(u.where==='top'||true))moveUnit(k,false,null);});(G.top||[]).forEach(k=>moveUnit(k,true,null));
   /* the Text group is newer than this saved order: keep it right after the Drawing style lists */
   if(!(G.top||[]).includes('T:Text')&&!(G.left||[]).includes('T:Text')){const ts=document.querySelector('#topbar > .tbg[aria-label="Text style"]'),tx=document.querySelector('#topbar > .tbg[aria-label="Text"]');if(ts&&tx)ts.after(tx);}}}catch(e){}
+
+/* ===== top bar: fold a group into one named menu (a click on its ⋮; remembered per group), or the whole bar at once:
+   Settings → Interface → Top bar. Compact keeps File as buttons and puts the rest into four menus in one row ===== */
+{const LBL={'General':'File','Object':'Arrange','Align and distribute':'Align','Structure':'Structure','Colors':'Style','Text style':'Font','Text':'Text'};
+  const MENUS=[['Arrange',['Object','Align and distribute']],['Structure',['Structure']],['Style',['Colors']],['Text',['Text style','Text']]];
+  const name=g=>(g.getAttribute('aria-label')||'').replace(/^[LT]:/,'');
+  const grps=()=>[...document.querySelectorAll('#topbar > .tbg')];
+  const content=g=>[...g.children].filter(x=>!x.classList.contains('tgrip')&&!x.classList.contains('foldbtn')&&!x.classList.contains('foldpop'));
+  const closeAll=()=>document.querySelectorAll('#topbar .foldpop').forEach(p=>{p.hidden=true;});
+  const ORIG=new WeakMap();/* Compact: buttons of a second group shown in the first group's menu, and the group they came from */
+  const relayout=()=>requestAnimationFrame(()=>{try{fitView();render();}catch(e){}});
+  function fold(g,label){if(g.classList.contains('folded'))return;const b=document.createElement('button');b.type='button';b.className='tb foldbtn';b.setAttribute('aria-haspopup','true');
+    b.textContent=label||LBL[name(g)]||name(g);b.title=b.textContent+': click to open';
+    const p=document.createElement('div');p.className='foldpop';p.hidden=true;content(g).forEach(x=>p.appendChild(x));g.append(b,p);g.classList.add('folded');}
+  function unfold(g){if(!g.classList.contains('folded'))return;const p=g.querySelector(':scope > .foldpop');[...p.children].forEach(x=>g.insertBefore(x,p));p.remove();g.querySelector(':scope > .foldbtn').remove();g.classList.remove('folded');}
+  let MODE='full';try{MODE=localStorage.getItem('rd-topbar')||'full';}catch(e){}
+  let FOLD;try{FOLD=JSON.parse(localStorage.getItem('rd-tbfold')||'null');}catch(e){}if(!Array.isArray(FOLD))FOLD=[];
+  function reset(){closeAll();
+    document.querySelectorAll('#topbar .foldpop > *').forEach(x=>{const o=ORIG.get(x);if(o){o.appendChild(x);ORIG.delete(x);}});
+    document.querySelectorAll('#topbar .foldpop > .fsep').forEach(x=>x.remove());
+    grps().forEach(g=>{unfold(g);g.classList.remove('rhide');});$('topbar').classList.remove('compact');}
+  function apply(){reset();
+    if(MODE!=='compact'){grps().forEach(g=>{if(FOLD.includes(name(g)))fold(g);});relayout();return;}
+    $('topbar').classList.add('compact');const prim=m=>grps().find(x=>m[1].includes(name(x)));
+    grps().forEach(g=>{const n=name(g);if(n==='General')return;const m=MENUS.find(x=>x[1].includes(n));if(!m||prim(m)===g)fold(g,m&&m[0]);});
+    grps().forEach(g=>{const m=MENUS.find(x=>x[1].includes(name(g)));if(!m||prim(m)===g)return;
+      const p=prim(m).querySelector(':scope > .foldpop');if(!p)return;const sep=document.createElement('span');sep.className='fsep';p.appendChild(sep);
+      content(g).forEach(x=>{ORIG.set(x,g);p.appendChild(x);});g.classList.add('rhide');});
+    relayout();}
+  $('topbar').addEventListener('click',e=>{
+    const fb=e.target.closest('.foldbtn');if(fb){const p=fb.nextElementSibling,was=p.hidden;closeAll();p.hidden=!was;
+      /* kept inside the drawing area: a menu near the right edge opens to the left */
+      if(was){p.style.left='';p.style.right='';const r=p.getBoundingClientRect(),c=$('topbar').getBoundingClientRect();if(r.right>c.right-4){p.style.left='auto';p.style.right='0';}}return;}
+    const gr=e.target.closest('#topbar > .tbg > .tgrip');if(gr&&MODE!=='compact'){const g=gr.parentElement,n=name(g);
+      if(g.classList.contains('folded')){unfold(g);FOLD=FOLD.filter(x=>x!==n);}else{fold(g);FOLD.push(n);}
+      try{localStorage.setItem('rd-tbfold',JSON.stringify(FOLD));}catch(e){}relayout();return;}
+    if(e.target.closest('.foldpop .tb'))setTimeout(closeAll,0);});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.foldpop,.foldbtn'))closeAll();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
+  /* a group dragged to the other panel goes unfolded; the bar is folded again after the drop */
+  document.addEventListener('dragstart',e=>{const g=e.target.closest&&e.target.closest('#topbar > .tbg > .tgrip');if(g)unfold(g.parentElement);},true);
+  document.addEventListener('dragend',()=>setTimeout(apply,0));
+  document.querySelectorAll('#topbar > .tbg > .tgrip').forEach(g=>{g.title='Click to fold this group into one menu (click again to unfold); drag to move it to the other panel or to another place';});
+  const sel=$('topbarMode');if(sel){sel.value=MODE;sel.addEventListener('change',()=>{MODE=sel.value;try{localStorage.setItem('rd-topbar',MODE);}catch(e){}apply();});}
+  apply();}
 
 renderKeys();
 /* Mac: the same renaming in the page's own words (button tips, menus, help, hotkey list); the drawing itself is left alone */
