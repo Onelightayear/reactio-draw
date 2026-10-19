@@ -766,7 +766,7 @@ html{scrollbar-color:var(--line) transparent}
           <div class="row" style="align-items:center;flex-wrap:nowrap;gap:8px"><select id="pfxSel" style="flex:1;padding:4px 6px;font-size:13px"><option value="plain">Leave plain: tBu</option><option value="italic">Italic: 𝑡Bu</option><option value="sup">Italic superscript: ᵗBu</option></select><button class="btn ghost sm" id="pfxApply">Apply to selection</button></div>
           <p class="note">How the prefix letter of tBu, iPr, sBu, nBu, OtBu, CO2tBu is written. New labels you type follow it; Apply to selection changes the labels of the selected structures (the whole sheet when nothing is selected).</p></div>
         <div class="setg"><label class="tlabel" for="mechGap">Ends of curved arrows</label>
-          <select id="mechGap" style="width:100%;padding:4px 6px;font-size:13px"><option value="0">Touch the atom or bond</option><option value="5">Small gap</option><option value="9">Larger gap</option></select>
+          <select id="mechGap" style="width:100%;padding:4px 6px;font-size:13px"><option value="0">Touch the atom or bond</option><option value="5">Small gap (default)</option><option value="9">Larger gap</option></select>
           <p class="note">How far a curved (mechanism) arrow drawn from or to an atom or the middle of a bond stays off it. An atom with a label always keeps at least a small gap, so the head does not run into its letters. Arrows already drawn keep their ends.</p></div>
         <h3 class="shead">Warnings</h3>
         <div class="setg"><label class="row" style="font-size:12.5px;flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="valMarks" style="width:auto;flex:none;margin-top:3px"> Mark valence errors on the structure</label>
@@ -3220,7 +3220,7 @@ function endDrag(ev){if(isTouchPtr(ev)){touchUp(ev);return;}
     let pa=d.start||findAtom(d.p0,10)||newAtom(d.p0.x,d.p0.y,'C');
     for(const q of d.pts){const t=findAtom(q,10,pa)||newAtom(q.x,q.y,'C');if(!bondBetween(pa,t))mol.bonds.push({id:mol.next++,a:pa.id,b:t.id,order:1,stereo:null});pa=t;}
     commit();return;}
-  if(d.mode==='bond'&&d.orbTip){if(d.moved&&d.end&&dist(d.end,d.p0)>4){snap();mol.arrows.push({id:mol.next++,x1:d.p0.x,y1:d.p0.y,x2:d.end.x,y2:d.end.y,head:'none'});commit();}return;}
+  if(d.mode==='bond'&&d.orbTip){if(d.moved&&d.end&&dist(d.end,d.p0)>4){snap();const ln={id:mol.next++,x1:d.p0.x,y1:d.p0.y,x2:d.end.x,y2:d.end.y,head:'none'};/* the dashed bond tools give a dashed overlap line */if(curBond==='dash'||curBond==='hashplain')ln.shaft='dashed';mol.arrows.push(ln);commit();}return;}
   if(d.mode==='bond'){snap();
     if(d.moved&&d.end){const st=d.start||newAtom(d.p0.x,d.p0.y,curEl);const tx=!d.target&&!findAtom(d.end,10,st)&&findText(d.end),t=d.target||findAtom(d.end,10,st)||(tx&&chemTxt(tx)&&textToAtom(tx))||newAtom(d.end.x,d.end.y,'C');const ex=bondBetween(st,t);
       /* joining two atoms that are already bonded raises the bond order (1 → 2 → 3 → 1) */
@@ -6190,7 +6190,7 @@ function importCdxml0(text){
   /* a lone C–C bond whose ends sit on two orbital tips is the overlap line ChemDraw users draw with the bond tool: it comes in as a plain line, not as ethane */
   for(const b of mol.bonds.slice()){const A=atomById(b.a),B=atomById(b.b);if(!A||!B||A.label||B.label||A.el!=='C'||B.el!=='C'||bondsOf(A).length!==1||bondsOf(B).length!==1)continue;
     const ta=orbTipNear(A,8),tb=orbTipNear(B,8);if(!ta||!tb)continue;mol.bonds.splice(mol.bonds.indexOf(b),1);mol.atoms.splice(mol.atoms.indexOf(A),1);mol.atoms.splice(mol.atoms.indexOf(B),1);
-    mol.arrows.push({id:mol.next++,x1:ta.x,y1:ta.y,x2:tb.x,y2:tb.y,head:'none'});}
+    const ln={id:mol.next++,x1:ta.x,y1:ta.y,x2:tb.x,y2:tb.y,head:'none'};if(b.stereo==='dash'||b.stereo==='hashplain')ln.shaft='dashed';mol.arrows.push(ln);}
   zoom=null;commit();
   /* CDXML stoichiometry grids: amounts, equivalents, limiting reagent and measured masses go into the step's grid, and a sheet table is placed where the grid was */
   const grids=[...doc.querySelectorAll('page > stoichiometrygrid')];if(!grids.length)return;
@@ -6975,7 +6975,7 @@ document.querySelector('[data-tool=arrow]').addEventListener('click',e=>{if(e.is
 document.addEventListener('pointerdown',e=>{if(!arrowPop.hidden&&!e.target.closest('#arrowpop')&&!e.target.closest('[data-tool=arrow]'))arrowPop.hidden=true;});
 /* snapping the ends of curved (mechanism) arrows to atoms and bonds */
 /* the gap set in Settings → Drawing → Ends of curved arrows (0: the tip touches) */
-function mechGap(){let g=0;try{g=+(localStorage.getItem('rd-mechgap')||0);}catch(e){}return g>0?g:0;}
+function mechGap(){let g=5;try{const v=localStorage.getItem('rd-mechgap');if(v!=null)g=+v;}catch(e){}return g>0?g:0;}
 /* the box of the letters an atom shows (its label, or the element with its implicit H), as labRect measures labels */
 function atomTextBox(a){if(!labeled(a))return null;const R=labRect(a);if(R)return R;const h=implicitH(a)||0,n=a.el.length+(h?1:0)+(h>1?1:0)+(a.chg?1:0);
   const K=labK(a),w=(n*8.6+6)*K,x0=labRightOf(a,neighbors(a))?a.x+6-w:a.x-6;return {x0:x0-2,x1:x0+w+2,y0:a.y-10*K,y1:a.y+10*K};}
