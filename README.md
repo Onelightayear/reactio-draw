@@ -1,3 +1,4 @@
+
 # Reactio Draw
 
 A free chemical structure and reaction editor for organic chemists. Draw with the mouse or the keyboard, keep a
@@ -9,6 +10,8 @@ and PowerPoint or to and from other chemistry editors as CDXML and CDX files. It
 | nothing to install | work fully offline | every function and button explained |
 
 ![Reactio Draw: a reaction with its reagent table](docs/overview.png)
+
+https://github.com/user-attachments/assets/1637fe6d-b6d1-4ec5-9d68-9a41d62ef0c8
 
 ## What it does
 
