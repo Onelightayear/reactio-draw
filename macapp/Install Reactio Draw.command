@@ -39,7 +39,7 @@ cat > "$b/Info.plist" <<PL
 <key>CFBundleExecutable</key><string>ReactioDraw</string>
 <key>CFBundleIconFile</key><string>ReactioDraw</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.0.1</string>
+<key>CFBundleShortVersionString</key><string>1.1</string>
 <key>LSMinimumSystemVersion</key><string>11.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
