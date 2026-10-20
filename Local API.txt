@@ -28,7 +28,7 @@ Useful commands
                                                          predicted shifts (1H, 13C, 19F, 31P) with typical errors (offline)
   list, properties {"index": 0}, scheme, table, export {"format": "smiles|mol|sdf|rxn|cdxml|xyz|svg|json"}
                                                          the structures, their properties, the scheme, the reagent table, a file
-  export          {"format": "xyz", "maxConformers": 20, "maxSeconds": 20}
+  export          {"format": "xyz", "maxConformers": 20, "maxSeconds": 30}
                                                          3D coordinates for quantum chemistry: hydrogens added, lowest
                                                          MMFF94s+ conformer, charge and multiplicity in each comment line
   inchi           {"index": 0}  or  {"smiles": "..."}    InChI and InChIKey (InChI library, built in)

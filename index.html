@@ -170,6 +170,10 @@ input.tgl:checked{background:var(--accent)}input.tgl:checked::after{left:16px}in
 .askbox .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .askbox button{font:600 13px var(--sans);padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .askbox button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.askbox.xyzbox{inset:auto 16px 16px auto;background:none}
+.xyzbox .card{width:min(380px,calc(100vw - 32px));box-sizing:border-box}
+.xyzbox .warn{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:var(--ink);max-height:160px;overflow:auto}
+.xyzbox .warn:empty{display:none}
 .doctabs .dt .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;border-radius:4px}
 .doctabs .dt .x:hover{background:var(--line);color:var(--ink)}
 .doctabs .add{border:1px dashed var(--line);background:none;color:var(--muted);border-radius:8px;padding:3px 10px;font:600 14px var(--sans);cursor:pointer;margin:0 0 3px 4px}
@@ -7334,7 +7338,7 @@ function embedBest(f){try{const O=oclLoad();if(embedOCL(O,f))return 'mmff';}catc
    One structure (a molfile from the drawing, abbreviations expanded) → hydrogens added → conformers from OpenChemLib's
    torsion library → each minimised with MMFF94s+ → the lowest kept. The drawn stereocentres and E/Z bonds are checked
    against the 3D result; charge and spin multiplicity go in the comment line, as ORCA, Gaussian and xtb need them. */
-function xyz3D(O,mb,o){o=o||{};const M=O.Molecule,maxConfs=o.maxConfs||20,maxMs=o.maxMs||8000,t0=Date.now();
+function xyz3D(O,mb,o,prog){o=o||{};const M=O.Molecule,maxConfs=o.maxConfs||20,maxMs=o.maxMs||8000,t0=Date.now();
   const m=M.fromMolfile(mb);m.ensureHelperArrays(M.cHelperParities);const nh=m.getAllAtoms();
   for(let i=0;i<nh;i++)m.setAtomMapNo(i,i+1,false);
   /* stereo as drawn: parity 1/2 is defined, 3 is unknown (the 3D shape then picks one) */
@@ -7347,6 +7351,7 @@ function xyz3D(O,mb,o){o=o||{};const M=O.Molecule,maxConfs=o.maxConfs||20,maxMs=
     if(ffOk)try{const ff=new O.ForceFieldMMFF94(c,'MMFF94s+');ff.minimise({maxIts:4000});e=ff.getTotalEnergy();}
       catch(err){ffOk=false;ffErr=String(err&&err.message||err).replace(/^[^:]*:\s*/,'');}
     if(!best||(e!=null&&(best.e==null||e<best.e)))best={e,c:c.getCompactCopy()};
+    if(prog)prog(n,maxConfs);
     if(!ffOk&&best)break;}
   if(!best)throw new Error('no 3D shape could be built');
   const c=best.c,atoms=[];let q=0,unp=0,elec=0;
@@ -7360,7 +7365,7 @@ function xyz3D(O,mb,o){o=o||{};const M=O.Molecule,maxConfs=o.maxConfs||20,maxMs=
   else{for(let i=0;i<aPar.length;i++)if((aPar[i]===1||aPar[i]===2)&&b.getAtomParity(at.get(i))!==aPar[i])ok=false;
     for(let i=0;i<bPar.length;i++){if(!(bPar[i]===1||bPar[i]===2))continue;const k=b.getBond(at.get(m.getBondAtom(0,i)),at.get(m.getBondAtom(1,i)));if(k<0||b.getBondParity(k)!==bPar[i])ok=false;}}
   if(unspec)notes.push(unspec+' stereo element'+(unspec>1?'s':'')+' not drawn: one was picked');
-  if(!ffOk)notes.push('not minimised: MMFF94 cannot handle this structure ('+ffErr+')');
+  if(!ffOk){const el=(ffErr.match(/\(([A-Z][a-z]?)\)\s*$/)||[])[1];notes.push('not minimised: MMFF94 has no parameters for '+(el||'this structure')+', so the shape is a rough guess; refine it with xtb or DFT');}
   /* atoms closer than 0.7 Å: the shape is broken */
   let close=1e9;for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){const A=atoms[i],B=atoms[j];close=Math.min(close,Math.hypot(A.x-B.x,A.y-B.y,A.z-B.z));}
   if(close<0.7)notes.push('atoms closer than 0.7 Å');
@@ -7374,14 +7379,16 @@ let XYZW=null,xyzSeq=0;const xyzWait=new Map();
 function xyzWorker(){if(XYZW!==null)return XYZW;XYZW=false;
   try{const src=document.getElementById('oclLib'),res=document.getElementById('oclRes');if(!src||!res||typeof Worker==='undefined')return XYZW;
     const code='self.window=self;\n'+src.textContent+'\n;OCL.Resources.register('+JSON.stringify(res.textContent)+');\n'+xyz3D.toString()+'\n'+
-      'onmessage=e=>{const d=e.data;try{postMessage({id:d.id,ok:true,r:xyz3D(OCL,d.mb,d.o)});}catch(err){postMessage({id:d.id,ok:false,error:String(err&&err.message||err)});}};';
+      'onmessage=e=>{const d=e.data;try{postMessage({id:d.id,ok:true,r:xyz3D(OCL,d.mb,d.o,(n,of)=>postMessage({id:d.id,progress:n,of}))});}catch(err){postMessage({id:d.id,ok:false,error:String(err&&err.message||err)});}};';
     const w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
-    w.onmessage=e=>{const p=xyzWait.get(e.data.id);if(!p)return;xyzWait.delete(e.data.id);e.data.ok?p.ok(e.data.r):p.no(new Error(e.data.error));};
+    w.onmessage=e=>{const d=e.data,p=xyzWait.get(d.id);if(!p)return;if(d.progress!=null){p.prog&&p.prog(d.progress,d.of);return;}xyzWait.delete(d.id);d.ok?p.ok(d.r):p.no(new Error(d.error));};
     w.onerror=e=>{e.preventDefault&&e.preventDefault();XYZW=false;for(const p of xyzWait.values())p.no(null);xyzWait.clear();};
     XYZW=w;}catch(e){XYZW=false;}
   return XYZW;}
-function xyzRun(mb,o){const w=xyzWorker(),inPage=()=>xyz3D(oclLoad(),mb,o);if(!w)return Promise.resolve().then(inPage);
-  return new Promise((ok,no)=>{const id=++xyzSeq;xyzWait.set(id,{ok,no:e=>e?no(e):ok(inPage())});w.postMessage({id,mb,o});});}
+function xyzRun(mb,o,prog){const w=xyzWorker(),inPage=()=>xyz3D(oclLoad(),mb,o,prog);if(!w)return Promise.resolve().then(inPage);
+  return new Promise((ok,no)=>{const id=++xyzSeq;xyzWait.set(id,{ok,prog,no:e=>e?no(e):ok(inPage())});w.postMessage({id,mb,o});});}
+/* Cancel: the worker is stopped (a new one starts on the next export) */
+function xyzStop(){if(XYZW){XYZW.terminate();XYZW=null;}const e=new Error('cancelled');e.cancelled=true;for(const p of xyzWait.values())p.no(e);xyzWait.clear();}
 /* every structure (or the selected ones) as one multi-frame .xyz; structures that cannot be done are listed with the reason */
 async function xyzExport(a){a=a||{};const saved=mol,m=expandedCopy(),jobs=[];mol=m;
   /* one frame per connected piece: the ions of a salt come out one by one */
@@ -7390,25 +7397,43 @@ async function xyzExport(a){a=a||{};const saved=mol,m=expandedCopy(),jobs=[];mol
       jobs.push({n:i+1,formula:formulaText(countsOf(fr)).replace(/−/g,'-'),smiles:fragSmilesS(fr),mb:lab?null:molBlock(fr,fragBonds(m,fr),''),err:lab?'the label '+lab.label+' is not a known group':null});});}
   finally{mol=saved;}
   if(!jobs.length)throw new Error('Nothing to convert: draw a structure first');
-  const o={maxConfs:Math.max(1,Math.min(200,+a.maxConformers||20)),maxMs:Math.max(1000,+a.maxSeconds*1000||20000)},frames=[],out=[];
+  /* maxSeconds is for the whole export: each structure gets an equal share of what is left (at least 2 s) */
+  const maxConfs=Math.max(1,Math.min(200,+a.maxConformers||20)),budget=Math.max(1000,+a.maxSeconds*1000||30000),t0=Date.now(),frames=[],out=[],todo=jobs.filter(j=>!j.err).length;let k=0;
   for(const j of jobs){const it={index:j.n-1,formula:j.formula,smiles:j.smiles};
-    if(j.err){it.error=j.err;out.push(it);continue;}
-    try{const r=await xyzRun(j.mb,o);frames.push(xyzFrame(r,'compound '+j.n+' '+j.formula));
-      Object.assign(it,{atoms:r.atoms.length,charge:r.charge,multiplicity:r.multiplicity,energy:r.energy!=null?+r.energy.toFixed(3):null,forceField:r.forceField,conformers:r.conformers,stereoKept:r.stereoKept,notes:r.notes});}
-    catch(e){it.error=String(e&&e.message||e);}
-    out.push(it);}
+    if(!j.err){k++;const o={maxConfs,maxMs:Math.max(2000,(budget-(Date.now()-t0))/(todo-k+1))},rep=(c,of)=>a.onProgress&&a.onProgress({structure:k,of:todo,formula:j.formula,conformer:c,maxConformers:of||maxConfs});rep(0);
+      try{const r=await xyzRun(j.mb,o,rep);frames.push(xyzFrame(r,'compound '+j.n+' '+j.formula));
+        Object.assign(it,{atoms:r.atoms.length,charge:r.charge,multiplicity:r.multiplicity,energy:r.energy!=null?+r.energy.toFixed(3):null,forceField:r.forceField,conformers:r.conformers,stereoKept:r.stereoKept,notes:r.notes});}
+      catch(e){if(e&&e.cancelled)throw e;it.error=String(e&&e.message||e);}
+      out.push(it);continue;}
+    it.error=j.err;out.push(it);}
   if(!frames.length)throw new Error(out.map(x=>'compound '+(x.index+1)+': '+x.error).join('; '));
   return {xyz:frames.join(''),structures:out};}
-/* File menu: save or copy the .xyz, and say what needs a look */
-async function xyzMenu(k){toast('Computing 3D coordinates (conformer search, MMFF94s+)…');
-  try{const r=await xyzExport({selected:true}),S2=r.structures,done=S2.filter(x=>!x.error);
+/* File menu: a box at the bottom right shows which structure and conformer is being worked on, with Cancel; when it
+   is done, Save and Copy are buttons in it. The browser shows a Save dialog only right after a click, and a conformer
+   search can take longer than that, so the file is saved from a click on the box. */
+let XYZBOX=null;
+function xyzMenu(k){if(XYZBOX){XYZBOX.box.querySelector('.card').animate([{transform:'scale(1.04)'},{transform:'none'}],250);return;}
+  const box=document.createElement('div');box.className='askbox xyzbox';box.setAttribute('role','status');
+  box.innerHTML='<div class="card"><b>3D coordinates (XYZ)</b><div class="tx"></div><ul class="warn"></ul><div class="row"></div></div>';
+  document.body.appendChild(box);const tx=box.querySelector('.tx'),ul=box.querySelector('.warn'),row=box.querySelector('.row'),t0=Date.now();let last=null,timer=null;
+  const btn=(l,pri,f)=>{const b=document.createElement('button');b.textContent=l;if(pri)b.className='pri';b.onclick=f;row.appendChild(b);return b;};
+  const close=()=>{clearInterval(timer);box.remove();XYZBOX=null;};
+  const show=()=>{const s=Math.round((Date.now()-t0)/1000)+' s';if(!last){tx.textContent='Starting… '+s;return;}
+    tx.textContent='Structure '+last.structure+' of '+last.of+' ('+last.formula+'): '+(last.conformer?'conformer '+last.conformer+' of up to '+last.maxConformers+' minimised':'building conformers')+' · '+s;};
+  XYZBOX={box};show();timer=setInterval(show,1000);
+  btn('Cancel',false,()=>{xyzStop();close();toast('XYZ export cancelled');});
+  xyzExport({selected:true,onProgress:p=>{last=p;show();}}).then(r=>{clearInterval(timer);const S2=r.structures,done=S2.filter(x=>!x.error);
     const warn=[...S2.filter(x=>x.error).map(x=>'compound '+(x.index+1)+' skipped: '+x.error),
       ...done.filter(x=>x.stereoKept===false).map(x=>'compound '+(x.index+1)+': the 3D stereo does not match the drawing'),
       ...done.flatMap(x=>x.notes.map(t=>'compound '+(x.index+1)+': '+t))];
-    if(k==='c-xyz')copyText(r.xyz,'XYZ copied ('+done.length+' structure'+(done.length>1?'s':'')+')');
-    else{const name=docName()+'.xyz';if(window.rdDesktop||!window.claude)offerFile(name,r.xyz);else offerFile(name+'.zip',zipOf([[name,r.xyz]]));}
-    if(warn.length)setTimeout(()=>toast(warn.join(' · '),true),k==='c-xyz'?1500:0);}
-  catch(e){toast('Could not make the XYZ: '+(e&&e.message||e),true);}}
+    tx.textContent='Ready: '+done.length+' structure'+(done.length>1?'s':'')+' in '+Math.round((Date.now()-t0)/1000)+' s.';
+    ul.innerHTML='';for(const w of warn){const li=document.createElement('li');li.textContent=w;ul.appendChild(li);}
+    row.innerHTML='';
+    btn('Close',false,close);
+    btn('Copy',k==='c-xyz',()=>{copyText(r.xyz,'XYZ copied');close();});
+    btn('Save .xyz',k!=='c-xyz',()=>{const name=docName()+'.xyz';if(window.rdDesktop||!window.claude)offerFile(name,r.xyz);else offerFile(name+'.zip',zipOf([[name,r.xyz]]));close();});
+    const p=row.querySelector('.pri');if(p)p.focus();})
+  .catch(e=>{if(e&&e.cancelled)return;close();toast('Could not make the XYZ: '+(e&&e.message||e),true);});}
 function fixWedges(f){const ids=new Set(f.map(a=>a.id));for(const b of mol.bonds){if(!(b.stereo==='wedge'||b.stereo==='hash')||!ids.has(b.a))continue;const A=atomById(b.a),B=atomById(b.b);b.stereo=B.z>=A.z?'wedge':'hash';}}
 function shape3D(){const fr=fragments().filter(f=>f.length>1),pick=sel.size?fr.filter(f=>f.some(a=>sel.has(a.id))):fr;
   if(!pick.length){toast('Nothing to shape: draw or select a structure first.',true);return;}

@@ -105,7 +105,7 @@ answer is `{xyz, structures}`: `xyz` is a multi-frame XYZ file, one frame per co
 salt one by one), with the charge and spin multiplicity in each comment line (`compound 1 C3H7NO2 charge=0 mult=1
 E(MMFF94s+)=21.5 kcal/mol`). `structures` lists, per structure, `charge`, `multiplicity`, `energy`, `conformers`,
 `stereoKept` (the 3D stereocentres and double bonds match the drawing) and `notes`, or an `error`.
-`maxConformers` (20) and `maxSeconds` (20) limit the search. Elements MMFF94 does not know (B, metals) still get
+`maxConformers` (20 per structure) and `maxSeconds` (30, for the whole export, shared out over the structures) limit the search. Elements MMFF94 does not know (B, metals) still get
 a 3D shape, written without minimisation and marked `not minimised`: refine those with xtb or DFT.
 
 ## 4. Examples
