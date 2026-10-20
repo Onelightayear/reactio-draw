@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/1637fe6d-b6d1-4ec5-9d68-9a41d62ef0c8
 | **Charts** | sensitivity screens — the radar diagrams of the condition-based sensitivity assessment of Glorius and co-workers ([Angew. Chem. Int. Ed. 2019, 58, 8572](https://doi.org/10.1002/anie.201901935)), editable on the sheet; product ratio pie and ring charts |
 | **Working fast** | scrolling in every direction (two fingers, or Shift+wheel sideways) and zoom to the pointer; a hotkey for every button and command, all reassignable, with search by name or by key; your own templates and labels on keys |
 | **API and command line** | a local API for scripts (Python, R, curl) in the desktop apps; a command line, `reactio`, that renders, converts and checks files without opening a window ([Command line.txt](Command%20line.txt)); and the same commands for web pages that embed the editor ([EMBEDDING.md](EMBEDDING.md)) |
-| **Styles** | ACS, RSC, Nature, Angewandte and more, colour themes, dark sheets |
+| **Styles** | ACS, RSC, Nature, Angewandte and more, colour themes (one of them color-blind safe), dark sheets |
 | **Light** | the whole editor is one web page of 3.6 MB (about 1.3 MB over the network; 5.8 MB as a single offline file with the NMR tables), with no server and nothing to install; the apps are about 20–28 MB to download. The NMR tables (2.2 MB) come only when you first predict a spectrum. For comparison, the Ketcher npm package is about 110 MB and Kekule.js about 42 MB |
 
 

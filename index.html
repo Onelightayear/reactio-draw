@@ -1046,7 +1046,7 @@ function groupCounts(smi,att){const k=smi+'|'+att;if(GC[k])return GC[k];const in
     if(h)c.H=(c.H||0)+h;q+=n.chg||0;});
   return GC[k]={c,q};}
 function countsOf(atoms){const c={};let q=0,unk=[];for(const a of atoms){if(a.multi)continue;
-  if(a.label){const gc=(a.grp?bondsOf(a).length<=grpSlots(a.grp)&&groupCounts(a.grp,usedVal(a)):labFormula(a.label)&&bondsOf(a).length<=1&&{c:labFormula(a.label),q:0})||(labMetalF(a.label)&&{c:labMetalF(a.label),q:0})||flCounts(a);if(!gc){unk.push(a.label);continue;}for(const k in gc.c)c[k]=(c[k]||0)+gc.c[k];q+=gc.q;continue;}
+  if(a.label){const gc=(a.grp?grpBonds(a)<=grpSlots(a.grp)&&groupCounts(a.grp,grpUsed(a)):labFormula(a.label)&&bondsOf(a).length<=1&&{c:labFormula(a.label),q:0})||(labMetalF(a.label)&&{c:labMetalF(a.label),q:0})||flCounts(a);if(!gc){unk.push(a.label);continue;}for(const k in gc.c)c[k]=(c[k]||0)+gc.c[k];q+=gc.q;continue;}
   c[a.el]=(c[a.el]||0)+1;const h=implicitH(a);if(h)c.H=(c.H||0)+h;q+=a.chg||0;}
   /* a ring drawn with a circle may carry a charge of its own (Cp⁻, tropylium⁺) */
   if(mol.rings&&mol.rings.length){const ids=new Set(atoms.map(a=>a.id));for(const r of mol.rings)if(r.q&&r.ids.every(id=>ids.has(id)))q+=r.q;}
@@ -1121,7 +1121,15 @@ function labFormula(t){if(!t||!/^(?:[A-Z][a-z]?\d*)+$/.test(t))return null;const
 function labMetalF(t){if(!t||!/[A-Z][a-z]?/.test(t))return null;let c;try{c=chemParse(t);}catch(e){return null;}return c&&Object.keys(c).some(e=>e in AW&&!NONMET.has(e))?c:null;}
 /* the metal of such a label (Co for Co(CO)3), so Clean Up lays its atom out as a metal */
 function labMetalEl(a){const c=a.label&&labMetalF(a.label);return c?Object.keys(c).find(e=>!NONMET.has(e)):null;}
-function labCountsOK(a){return labFormula(a.label)&&bondsOf(a).length<=1||!!labMetalF(a.label);}
+/* the bonds a group label's attachment points must cover: a bond to a metal (PPh2 or NMe2 coordinating Pd, Fe…) is the group's
+   lone pair given to the metal, not one of its attachment points */
+const toMetal=(b,a)=>{const o=other(b,a);return !!(o&&(o.label?labMetalEl(o):o.el&&!NONMET.has(o.el)));};
+function grpBonds(a){return bondsOf(a).filter(b=>!toMetal(b,a)).length;}
+function grpUsed(a){return bondsOf(a).filter(b=>!toMetal(b,a)).reduce((s,b)=>s+(b.stereo==='deloc'||b.ar?1.5:b.order),0);}
+function labCountsOK(a){return labFormula(a.label)&&bondsOf(a).length<=1||!!labMetalF(a.label)||genericLab(a.label);}
+/* a generic group (R, R1, R', Ar, X, OR2, CO2R…): a placeholder, not an error, though it has no formula or mass */
+function genericLab(t){t=String(t||'');const G=/R(?![a-z])\d*['′″]*|Ar\d*['′]*|EWG|EDG|PG|Nu|Hal|X\d*/g;if(!G.test(t))return false;
+  const r=t.replace(/\((?:R(?![a-z])\d*['′″]*|Ar)\)\d*/g,'').replace(G,'');return !r||/^(?:[A-Z][a-z]?\d*|[()]\d*)+$/.test(r)&&[...r.matchAll(/[A-Z][a-z]?/g)].every(m=>m[0] in AW);}
 function resolveLabel(t){if(typeof libNick==='function'){const l=libNick(t);if(l)return l;}return NICK[t]||NICKL[t.toLowerCase()]||readLabel(t);}
 /* ===== reading a label that is in no list: the algorithm =====
    The label is cut into units, left to right: an element with its count (C, H2, O2), a named group (Me, tBu, Ph, Boc…: one bond each,
@@ -1706,6 +1714,12 @@ const THEMES={"publication":{"name":"Publication","light":{"ink":"#000000","pape
  THEMES.jewel={name:'Jewel',light:{ink:'#000000',paper:'#ffffff',strong:ST,tint:['#f2c9d8','#f8d8c2','#f0e2b0','#bfe6cf','#bfe4e2','#c6d3ea','#d6cdec','#e6cbe6'],hues:H,el:EL},
   dark:{ink:'#ffffff',paper:'#000000',strong:['#e05587','#f0924f','#e0b030','#30c27a','#2bb8b4','#5f8fd8','#9078d8','#c06cc0'],tint:['#5a1530','#5a3215','#5a4300','#00502a','#004a48','#14305a','#33215f','#4c1f4c'],hues:H,
    el:{N:'#6f9be0',O:'#e05587',S:'#e0b030',P:'#f0924f',F:'#30c27a',Cl:'#30c27a',Br:'#e05587',I:'#9078d8',B:'#c06cc0',Si:'#b0b0b0'}}};}
+/* Colour-blind safe: the eight colours of Okabe and Ito ("Color Universal Design", 2002), the palette Nature's figure guide points to
+   (B. Wong, Nature Methods 8, 441 (2011)): told apart with any kind of colour blindness */
+{const H=['Vermillion','Orange','Yellow','Bluish green','Sky blue','Blue','Reddish purple','Black'],
+  EL={N:'#0072b2',O:'#d55e00',S:'#e69f00',P:'#cc79a7',F:'#009e73',Cl:'#009e73',Br:'#cc79a7',I:'#cc79a7',B:'#56b4e9',Si:'#999999'};
+ THEMES.cbsafe={name:'Color-blind safe',light:{ink:'#000000',paper:'#ffffff',strong:['#d55e00','#e69f00','#f0e442','#009e73','#56b4e9','#0072b2','#cc79a7','#000000'],tint:['#f4d7bf','#f9e7bf','#fbf8d0','#bfe7dc','#d5ecfa','#bfdcec','#f2dee9','#d9d9d9'],hues:H,el:EL},
+  dark:{ink:'#ffffff',paper:'#000000',strong:['#d55e00','#e69f00','#f0e442','#009e73','#56b4e9','#0072b2','#cc79a7','#ffffff'],tint:['#552600','#5c4000','#605b1a','#003f2e','#22485d','#002e47','#523043','#4d4d4d'],hues:[...H.slice(0,7),'White'],el:{...EL,N:'#56b4e9'}}};}
 let MYPAL={};try{MYPAL=cleanState(JSON.parse(localStorage.getItem('rd-palettes')||'{}')||{});}catch(e){}
 function saveMyPal(){try{localStorage.setItem('rd-palettes',JSON.stringify(MYPAL));}catch(e){}}
 /* paper: the sheet's background (white by default); dark papers switch themes to their dark variant */
@@ -2099,14 +2113,16 @@ function render(){if(window.__rdSelHook)window.__rdSelHook();orbFollow();syncHap
         const tt=((qx-px)*cdy-(qy-py)*cdx)/den;if(Math.abs(tt)>st.dbl*3)return def;return {x:px+ux*tt,y:py+uy*tt};};
       const P1=t1?{x:x1+nx*d,y:y1+ny*d}:end(A,B,0,1),P2=t2?{x:x2+nx*d,y:y2+ny*d}:end(B,A,0,-1);
       s+=`<line x1="${P1.x}" y1="${P1.y}" x2="${P2.x}" y2="${P2.y}" ${ink} stroke-width="${bw}" stroke-dasharray="${(3*bw/1.6).toFixed(2)} ${(2.6*bw/1.6).toFixed(2)}"/>`;continue;}
-    if(b.stereo==='bold'||b.hapFront&&!b.stereo&&b.order===1){s+=ln(0,0,0,'',(b.stereo==='bold'?st.bold:st.bold*0.8)*wk);continue;}
+    /* a bold double or triple bond (as files from other editors have it): the main line bold, the others plain */
+    if(b.stereo==='bold'&&b.order===1||b.hapFront&&!b.stereo&&b.order===1){s+=ln(0,0,0,'',(b.stereo==='bold'?st.bold:st.bold*0.8)*wk);continue;}
+    const mw=b.stereo==='bold'?st.bold*wk:0;
     if(b.stereo==='dash'){s+=ln(0,0,0,'stroke-dasharray="3 3"');continue;}
     if(b.stereo==='wavy'){const len=Math.hypot(x2-x1,y2-y1),N=Math.max(8,Math.round(len/2));let pts=[];for(let i=0;i<=N;i++){const t=i/N,w=Math.sin(t*len/9*2*Math.PI)*2.8;pts.push(`${x1+(x2-x1)*t+nx*w},${y1+(y2-y1)*t+ny*w}`);}s+=`<polyline points="${pts.join(' ')}" fill="none" ${ink} stroke-width="${bw*0.85}"/>`;continue;}
     if(b.order===1)s+=ln(0,0,0);
-    else if(b.order===3){const d=st.dbl*0.85;s+=ln(0,0,0)+ln(-d,2,2)+ln(d,2,2);}
+    else if(b.order===3){const d=st.dbl*0.85;s+=ln(0,0,0,'',mw)+ln(-d,2,2)+ln(d,2,2);}
     else{let side=0;
       if(b.side==='l')side=1;else if(b.side==='r')side=-1;else if(b.side!=='c'){const rc=ringCenterOf(b);if(rc){side=((rc.x-(A.x+B.x)/2)*nx+(rc.y-(A.y+B.y)/2)*ny)>0?1:-1;}}
-      if(side===0)s+=ln(-st.dbl/2,0,0)+ln(st.dbl/2,0,0);else{const sh=st.dbl*0.9;s+=ln(0,0,0)+ln(st.dbl*side,t1?1:sh,t2?1:sh);}}
+      if(side===0)s+=ln(-st.dbl/2,0,0,'',mw)+ln(st.dbl/2,0,0);else{const sh=st.dbl*0.9;s+=ln(0,0,0,'',mw)+ln(st.dbl*side,t1?1:sh,t2?1:sh);}}
   }while(0);
     /* a farther bond crossed by a nearer one is interrupted there (a mask cuts the line; nothing is painted over) */
     if(AUTOF&&AUTOF.has(b)){const A=atomById(b.a),B=atomById(b.b),mid='gm'+b.id,gw=lwOf(b)*3+4;
@@ -2149,7 +2165,7 @@ function render(){if(window.__rdSelHook)window.__rdSelHook();orbFollow();syncHap
         :`<text x="${a.x-half}" y="${y0+(hs==='d'?14.5:-14.5)*K}" text-anchor="start" ${gf}>${gt}</text>`;continue;}
     if(a.label){const gq=a.grp?(groupCounts(a.grp,usedVal(a))||{q:0}).q:0,nb=neighbors(a),right=labRightOf(a,nb),shownL=right?revLabel(a.label):a.label,lab=(a.lsty?styledLabelHTML(shownL,shownStyles(a,right),STYo(a).label):(!a.col&&a.grp&&bondsOf(a).length<=grpSlots(a.grp)&&labColored(shownL,STYo(a).label))||subTs(esc(shownL),STYo(a).label))+(gq?`<tspan dy="${-(STYo(a).label*0.38).toFixed(2)}" font-size="70%">${chgStr(gq)}</tspan>`:'');
       const K=labK(a),w=(a.label.length*8.6+6)*K,x0=right?a.x+6-w:a.x-6;
-      const bad=!renderPlain&&(a.grp?bondsOf(a).length>grpSlots(a.grp)&&!labMetalF(a.label)&&!flCounts(a):!labCountsOK(a)&&!flCounts(a));
+      const bad=!renderPlain&&(a.grp?grpBonds(a)>grpSlots(a.grp)&&!labMetalF(a.label)&&!flCounts(a):!labCountsOK(a)&&!flCounts(a));
       if(bad&&warnOn('lab'))s+=`<rect x="${x0-2}" y="${a.y-11*K}" width="${w+4}" height="${21*K}" rx="3" style="fill:var(--panel);stroke:var(--err)" stroke-width="1.3" stroke-dasharray="3 2"><title>${a.grp?'Too many bonds for this group: not counted':'Unrecognized label: not counted in formula or mass'}</title></rect>`;
       s+=`<text x="${right?a.x+6:a.x-6}" y="${a.y+5.3*K}" text-anchor="${right?'end':'start'}" style="fill:${!bad?(a.col||'var(--ink)'):'var(--err)'};font:${atomFont(a,15*K)}">${lab}${a.grp&&bad?`<title>${esc(a.label)} has ${grpSlots(a.grp)} attachment point(s) but ${bondsOf(a).length} bonds</title>`:''}</text>`;continue;}
     const K=labK(a),h=implicitH(a),col=a.col||elColor(a.el),half=a.el.length*4.7*K,q=a.chg||0;
@@ -4904,7 +4920,7 @@ function cdxmlOf(m,sch){const CDXF=[],cdxFontId=f=>{let i=CDXF.indexOf(f);if(i<0
     /* a radical the same way: one dot (Electron) or two (LonePair), representing the atom's Radical; a radical ion is
        written as its charge sign and its dot (ReShiki writes them so too); the second point turns the pair outwards */
     for(const a of fr){if(inG.has(a.id)||!a.rad)continue;const c=cdxRadSpot(m,a,fb),l=Math.hypot(c.x-a.x,c.y-a.y)||1,ux=(c.x-a.x)/l,uy=(c.y-a.y)/l;
-      s+=`<graphic id="${id++}" BoundingBox="${P(c.x,c.y)} ${(c.x*k-ux*7.5).toFixed(2)} ${(c.y*k-uy*7.5).toFixed(2)}" GraphicType="Symbol" SymbolType="${a.rad===2?'LonePair':'Electron'}"><represent attribute="Radical" object="${nid.get(a.id)}"/></graphic>`;}
+      s+=`<graphic id="${id++}" BoundingBox="${P(c.x,c.y)} ${(c.x*k-ux*7.5).toFixed(2)} ${(c.y*k-uy*7.5).toFixed(2)}" GraphicType="Symbol" SymbolType="${a.rad===2?'LonePair':'Electron'}"${a.radHide?' color="1"':''}><represent attribute="Radical" object="${nid.get(a.id)}"/></graphic>`;}
     /* a filled ring is listed by its bonds */
     const ids=new Set(fr.map(a=>a.id));for(const f of (m.fills||[]))if(f.ids.every(x=>ids.has(x))){const ci=colIdx(onWhite(f.color,FILL_A));
       const bs=f.ids.map((x,i)=>{const y=f.ids[(i+1)%f.ids.length];const bd=m.bonds.find(q=>q.a===x&&q.b===y||q.a===y&&q.b===x);return bd&&bnid.get(bd);});
@@ -4913,10 +4929,13 @@ function cdxmlOf(m,sch){const CDXF=[],cdxFontId=f=>{let i=CDXF.indexOf(f);if(i<0
     s=s.replace(/@@(\d+)@@/g,(m0,id)=>{const a=m.atoms.find(q=>q.id===+id);return a&&a.multi?a.multi.map(x=>nid.get(x)).filter(Boolean).join(' '):'';});
     out.push(s+'</fragment>');}
   for(const a of m.atoms)if(a.pd){const t=freeAngles(a,1)[0],x=a.x+Math.cos(t)*14,y=a.y+Math.sin(t)*14+4;out.push(`<t id="${id++}" p="${P(x,y)}" Justification="Center"><s font="3" size="8" face="2">δ</s><s font="20" size="8" face="64">${a.pd>0?'+':'-'}</s></t>`);}
-  for(const t of m.texts)out.push(`<t id="${id++}" p="${P(t.x,t.y)}"${t.align?` Justification="${{center:'Center',right:'Right',justify:'Full'}[t.align]}"`:''}>${(()=>{let r=cdxRuns(t,(10*tSize(t)/(STY().label||15)).toFixed(1)),ci=colIdx(t.color);{const fn=t.font==='=style'?((STY0().pt&&STY0().pt.font)||'Arial'):t.font;if(fn&&fn!==docFontName())r=r.replace(/<s font="3"/g,`<s font="${cdxFontId(fn)}"`);}return ci?r.replace(/<s font="(\d+)"/g,`<s font="$1" color="${ci}"`):r;})()}</t>`);
+  /* a centred or right-aligned caption is placed by its centre or right end, as CDXML keeps it */
+  for(const t of m.texts)out.push(`<t id="${id++}" p="${P(t.x+(t.align==='center'?textW(t)/2:t.align==='right'?textW(t):0),t.y)}"${t.align?` Justification="${{center:'Center',right:'Right',justify:'Full'}[t.align]}"`:''}>${(()=>{let r=cdxRuns(t,(10*tSize(t)/(STY().label||15)).toFixed(1)),ci=colIdx(t.color);{const fn=t.font==='=style'?((STY0().pt&&STY0().pt.font)||'Arial'):t.font;if(fn&&fn!==docFontName())r=r.replace(/<s font="3"/g,`<s font="${cdxFontId(fn)}"`);}return ci?r.replace(/<s font="(\d+)"/g,`<s font="$1" color="${ci}"`):r;})()}</t>`);
   const arIds=[],arG=new Map(),tblQueue=[];for(const r of m.arrows){const i=id++;
     if(r.kind==='brk'&&r.b==='⌉'){const R=brkRect(r);out.push(`<graphic id="${i}" BoundingBox="${P(R.x1,R.y0)} ${P(R.x0,R.y0)}" GraphicType="Line"/>`);out.push(`<graphic id="${id++}" BoundingBox="${P(R.x1,R.y1)} ${P(R.x1,R.y0)}" GraphicType="Line"/>`);continue;}
-    if(r.kind==='brk'){const R=brkRect(r),bt={'[':'Square','(':'Round','{':'Curly'}[r.b[0]]+(r.b.length===2?'Pair':'');out.push(`<graphic id="${i}" BoundingBox="${P(R.x0,R.y0)} ${P(R.x1,R.y1)}" GraphicType="Bracket" BracketType="${bt}"/>`);continue;}
+    if(r.kind==='brk'){const R=brkRect(r),bt={'[':'Square','(':'Round','{':'Curly'}[r.b[0]]+(r.b.length===2?'Pair':'');/* a single bracket is a line whose lips are on the right of the way it runs: "[" upwards, "]" downwards */
+      const one=brkSingle(r.b||'[]'),bb=one&&!r.flip?`${P(R.x0,R.y1)} ${P(R.x0,R.y0)}`:one?`${P(R.x0,R.y0)} ${P(R.x0,R.y1)}`:`${P(R.x0,R.y0)} ${P(R.x1,R.y1)}`;
+      out.push(`<graphic id="${i}" BoundingBox="${bb}" GraphicType="Bracket" BracketType="${bt}"${colAt(r.col,'color')}/>`);continue;}
     if(r.kind==='tbl'){tblQueue.push(r);continue;}
     /* a picture goes in as CDXML stores one: an embedded object holding the PNG, JPEG or GIF file as it is */
     if(r.kind==='img'){const mm=/^data:image\/(png|jpeg|jpg|gif);base64,(.*)$/i.exec(r.src||'');if(mm){const B=imgBox(r),bin=atob(mm[2]);let hx='';for(let k=0;k<bin.length;k++)hx+=bin.charCodeAt(k).toString(16).padStart(2,'0');
@@ -6080,6 +6099,8 @@ function importCdxml0(text){
   const doc=new DOMParser().parseFromString(text,'application/xml');if(doc.querySelector('parsererror')){toast('That CDXML could not be read',true);return;}
   /* grouped objects: read as if they sat on the page */
   for(let g;(g=doc.querySelector('page > group'));)g.replaceWith(...g.children);
+  /* arrows a file keeps inside a structure (electron-pushing arrows drawn on it) are read as the page's own */
+  {const pg=doc.querySelector('page');if(pg)for(const e of [...doc.querySelectorAll('page > fragment > curve[ArrowheadHead],page > fragment > curve[ArrowheadTail],page > fragment > arrow')])pg.appendChild(e);}
   /* runs in the Symbol font (Greek letters and arrows) read back as the characters they show */
   {const sym=new Set([...doc.querySelectorAll('fonttable > font')].filter(f=>/^symbol$/i.test(f.getAttribute('name')||'')).map(f=>f.getAttribute('id')));
     if(sym.size)for(const r of doc.querySelectorAll('s'))if(sym.has(r.getAttribute('font')))r.textContent=[...r.textContent].map(c=>SYM_REV[c]||c).join('');}
@@ -6093,7 +6114,8 @@ function importCdxml0(text){
   const mkAtom=(n,p)=>{const z=parseInt(n.getAttribute('Element')||'6');let el=ELOFZ(z);if(n.getAttribute('Isotope')==='2'&&el==='H')el='D';
     const a=newAtom(p.x+ox,p.y,el);a.chg=parseInt(n.getAttribute('Charge')||'0')||0;{const c=colOf(n.getAttribute('color')),h=offWhite(colOf(n.getAttribute('highlightColor'))||'',HL_A)||null;if(c)a.col=c;if(h)a.hl=h;}const rad=n.getAttribute('Radical');if(rad==='Doublet')a.rad=1;else if(rad==='Triplet'||rad==='Singlet')a.rad=2;
     {const et=n.getAttribute('EnhancedStereoType'),eg=parseInt(n.getAttribute('EnhancedStereoGroupNum')||'1',10)||1;if(et==='Absolute')a.esr='abs';else if(et==='And')a.esr='&'+eg;else if(et==='Or')a.esr='or'+eg;}
-    const nh=n.getAttribute('NumHydrogens');if(nh!=null&&el!=='C')hPend.push([a,+nh]);return a;};
+    /* a carbon gets its hydrogens from the file only when it is drawn with a label (a lone "C" with none) */
+    const nh=n.getAttribute('NumHydrogens');if(nh!=null&&(el!=='C'||/^C$/.test((n.querySelector(':scope > t')||{}).textContent||'')))hPend.push([a,+nh]);return a;};
   const mkBond=(b,map)=>{const A=map.get(b.getAttribute('B')),B=map.get(b.getAttribute('E'));if(!A||!B)return;const o=b.getAttribute('Order');const d=b.getAttribute('Display')||'';
     const nb={id:mol.next++,a:A.id,b:B.id,order:o==='2'?2:o==='3'?3:1,stereo:o==='1.5'?'deloc':/WedgeBegin/.test(d)&&!/Hash/.test(d)?'wedge':/WedgedHash/.test(d)?'hash':d==='Bold'?'bold':d==='Dash'?'dash':d==='Wavy'?'wavy':d==='Hash'?'hashplain':null};
     {const c=colOf(b.getAttribute('color')),h=offWhite(colOf(b.getAttribute('highlightColor'))||'',HL_A)||null;if(c)nb.col=c;if(h)nb.hl=h;}mol.bonds.push(nb);bondMap.set(b.getAttribute('id'),[A,B]);};
@@ -6104,6 +6126,8 @@ function importCdxml0(text){
       if(txt){const p=pt((lab.getAttribute('p'))||ns[0].getAttribute('p'));const t={id:mol.next++,x:p.x+ox,y:p.y,text:txt,size:textDef.size,fs:true};mol.texts.push(t);fragText.set(fr.getAttribute('id'),t.id);{const n=+fr.getAttribute('id');if(isFinite(n))fragText.set(String(((n&0xFFFF)<<16)>>16),t.id);}continue;}}
     for(const n of ns){const p=pt(n.getAttribute('p'));const nt=n.getAttribute('NodeType')||'';const lab=n.querySelector(':scope > t');const txt=lab?lab.textContent.trim():'';
       if(nt==='ExternalConnectionPoint')continue;
+      /* "Ar" for an aryl group: files keep it as an argon atom with that label; it is the generic label Ar here */
+      if(n.getAttribute('Element')==='18'&&txt==='Ar'){const a=mkAtom(n,p);a.el='C';setLabel(a,'Ar');nodeMap.set(n.getAttribute('id'),a);made.push(a);continue;}
       /* a known abbreviation: a nickname node, or a plain carbon node that only carries the label text (as Reactio Draw writes OtBu, OMe…) */
       if((LABELED.test(nt)||!nt&&!n.hasAttribute('Element')&&txt!=='C')&&txt&&(resolveLabel(txt)||!nt&&labMetalF(txt))){const a=mkAtom(n,p);setLabel(a,txt);{const st=cdxLabStyles(lab,txt,false);if(st)a.lsty=st;}nodeMap.set(n.getAttribute('id'),a);made.push(a);continue;}
       /* a label Reactio Draw does not know: draw the structure the file keeps inside it */
@@ -6111,6 +6135,10 @@ function importCdxml0(text){
       if(inner){const im=new Map(),ins=[...inner.querySelectorAll(':scope > n')],ext=ins.find(q=>q.getAttribute('NodeType')==='ExternalConnectionPoint');
         const ib=[...inner.querySelectorAll(':scope > b')];const attB=ext&&ib.find(q=>q.getAttribute('B')===ext.getAttribute('id')||q.getAttribute('E')===ext.getAttribute('id'));
         const attId=attB?(attB.getAttribute('B')===ext.getAttribute('id')?attB.getAttribute('E'):attB.getAttribute('B')):(ins.find(q=>q!==ext)||{getAttribute:()=>null}).getAttribute('id');
+        /* a label holding a generic group (OR, OR2, NR2, NHAr…): kept as the label, an R or Ar has no structure to draw
+           (files keep Ar inside such a label as an argon atom labelled "Ar") */
+        if(txt&&ins.some(q=>{const lt=((q.querySelector(':scope > t')||{}).textContent||'').trim();return q.getAttribute('NodeType')==='GenericNickname'||/^(Ar|R\d*['′″]*|X)$/.test(lt)&&genericLab(lt);})){
+          const a=mkAtom(n,p);a.el='C';setLabel(a,txt);{const st=cdxLabStyles(lab,txt,false);if(st)a.lsty=st;}nodeMap.set(n.getAttribute('id'),a);made.push(a);continue;}
         /* keep it a label when its structure hangs off one atom: the label shows, formula and mass come from the structure */
         {const exts=ins.filter(q=>q.getAttribute('NodeType')==='ExternalConnectionPoint').map(q=>q.getAttribute('id')),roots=new Set();
           for(const q of ib){const B=q.getAttribute('B'),E=q.getAttribute('E');if(exts.includes(B))roots.add(E);if(exts.includes(E))roots.add(B);}
@@ -6131,13 +6159,18 @@ function importCdxml0(text){
   /* captions: style runs back to Reactio Draw's marks (digits after a symbol stay plain, formula style subscripts them) */
   for(const t of doc.querySelectorAll('page > t')){const p=pt(t.getAttribute('p'));const ss=[...t.querySelectorAll(':scope > s')];let txt='';const f0=ss.length?+(ss[0].getAttribute('face')||0):0;
     for(const r of ss){const f=+(r.getAttribute('face')||0);let v=r.textContent;const ex=f&~f0&7;if(ex&&v.trim()){if(ex&4)v='\\u{'+v+'}';if(ex&2)v='\\i{'+v+'}';if(ex&1)v='\\b{'+v+'}';}
-      if(f&32&&!(/^\d+$/.test(r.textContent)&&/[A-Za-z)\]]$/.test(txt)))txt+='_{'+v+'}';else if(f&64)txt+='^{'+v+'}';else txt+=v;}
+      /* face 96 (subscript and superscript together) is the formula style: the text as it is, its digits are set as a formula's;
+         a subscript or superscript run that spans lines is marked line by line */
+      const wrap=m=>v.split('\n').map(x=>x?m+'{'+x+'}':x).join('\n');
+      if((f&96)===96)txt+=v;else if(f&32&&!(/^\d+$/.test(r.textContent)&&/[A-Za-z)\]]$/.test(txt)))txt+=wrap('_');else if(f&64)txt+=wrap('^');else txt+=v;}
     if(!ss.length)txt=t.textContent;txt=txt.replace(/\r/g,'\n').trim();if(!txt)continue;
     /* the conditions caption written next to a stoichiometry grid ("Temperature: rt", "Atmosphere: Air"…) goes back into the conditions, not onto the sheet */
     if(hasGrid){const ls=plainText(txt).split('\n').map(x=>x.trim()).filter(Boolean);if(ls.length&&ls.every(l=>/^(Temperature|Time|Atmosphere|Other):\s*/.test(l))){condCapt.push(...ls);continue;}}
     const sz0=ss.length?parseFloat(ss[0].getAttribute('size')):NaN;/* point size kept: export writes 10 pt per label size, so a file goes out the way it came in */
     const o={id:mol.next++,x:p.x+ox,y:p.y,text:txt,size:sz0>0?+(sz0*(STY().label||15)/10).toFixed(2):textDef.size,fs:true};if(f0&1)o.bold=true;if(f0&2)o.italic=true;if(f0&4)o.ul=true;
-    const c=ss.length&&colOf(ss[0].getAttribute('color'));if(c)o.color=c;const j=t.getAttribute('Justification');if(j&&j!=='Left')o.align={Center:'center',Right:'right',Full:'justify'}[j];mol.texts.push(o);}
+    const c=ss.length&&colOf(ss[0].getAttribute('color'));if(c)o.color=c;const j=t.getAttribute('Justification');if(j&&j!=='Left')o.align={Center:'center',Right:'right',Full:'justify'}[j];
+    /* CDXML places a centred caption by its centre, a right-aligned one by its right end */
+    if(o.align==='center')o.x-=textW(o)/2;else if(o.align==='right')o.x-=textW(o);mol.texts.push(o);}
   /* pictures (ChemDraw's embedded objects) that carry a PNG, JPEG or GIF file */
   for(const e of doc.querySelectorAll('embeddedobject')){const v=(e.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;
     const ty=['PNG','JPEG','GIF','TIFF'].find(t=>e.hasAttribute(t));if(!ty)continue;const h=e.getAttribute(ty).replace(/\s+/g,'');let bin='';for(let q=0;q+1<h.length;q+=2)bin+=String.fromCharCode(parseInt(h.substr(q,2),16));
@@ -6162,7 +6195,7 @@ function importCdxml0(text){
     const Q=[];for(let i=0;i+1<v.length;i+=2)Q.push({x:v[i]*k+ox,y:v[i+1]*k});const A=[];for(let i=0;i+2<Q.length;i+=3)A.push({i:Q[i],p:Q[i+1],o:Q[i+2]});
     if(A.length<2)continue;const o=penNew(A);delete o.tail;delete o.cross;const H=c.getAttribute('ArrowheadHead');
     if(!H)o.head='none';else if(/Half/.test(H)){o.head='half';o.hside=/Right/.test(H)?1:-1;}else delete o.head;if(c.getAttribute('LineType')==='Dashed')o.shaft='dashed';else delete o.shaft;
-    mol.arrows.push(o);}
+    {const cl=colOf(c.getAttribute('color'));if(cl)o.col=cl;else delete o.col;}mol.arrows.push(o);}
   /* η-rings: an attachment point listing its ring atoms */
   for(const n of doc.querySelectorAll('n[NodeType="MultiAttachment"]')){const a=nodeMap.get(n.getAttribute('id'));if(!a)continue;
     const R=(n.getAttribute('Attachments')||'').trim().split(/\s+/).map(id=>nodeMap.get(id)).filter(Boolean);if(!R.length)continue;a.el='C';a.chg=0;delete a.label;delete a.grp;a.multi=R.map(q=>q.id);R.forEach(q=>q.hap=1);}
@@ -6170,8 +6203,22 @@ function importCdxml0(text){
   for(const g of doc.querySelectorAll('graphic[GraphicType="Symbol"]')){const r=g.querySelector('represent[attribute="Charge"]'),a=r&&nodeMap.get(r.getAttribute('object'));if(!a||!a.chg)continue;
     const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;
     const st=g.getAttribute('SymbolType')||'';if(!/Plus|Minus/.test(st))continue;a.cs=/^Circle/.test(st)?'c':'p';delete a.cang;a.cpos={dx:v[0]*k+ox-a.x,dy:v[1]*k-a.y};}
+  /* symbols standing on their own (a charge or a ‡ next to a bracket): a free charge, the dagger as text */
+  for(const g of doc.querySelectorAll('page > graphic[GraphicType="Symbol"]')){if(g.querySelector('represent'))continue;
+    const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;const st=g.getAttribute('SymbolType')||'';
+    const x=v[0]*k+ox,y0=Math.min(v[1],v[3])*k,y1=Math.max(v[1],v[3])*k,c=colOf(g.getAttribute('color'));
+    if(/^(Circle)?(Plus|Minus)$/.test(st)){const t=freeCharge(/Plus/.test(st)?1:-1,/^Circle/.test(st)?'c':'',x,(y0+y1)/2);if(c)t.color=c;}
+    else if(/Dagger/.test(st)){const t={id:mol.next++,x,y:y1,text:st==='DoubleDagger'?'‡':'†',size:textDef.size,fs:false};if(c)t.color=c;mol.texts.push(t);}}
+  /* brackets: a pair is its box; a single one is a line, its lips on the right of the way it was drawn ("]" drawn downwards, "[" upwards) */
+  for(const g of doc.querySelectorAll('page > graphic[GraphicType="Bracket"]')){const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;
+    const bt=g.getAttribute('BracketType')||'SquarePair',ch={Round:'(',Square:'[',Curly:'{'}[bt.replace('Pair','')];if(!ch)continue;
+    const o={id:mol.next++,kind:'brk',b:/Pair$/.test(bt)?ch+{'(':')','[':']','{':'}'}[ch]:ch,x1:v[0]*k+ox,y1:Math.min(v[1],v[3])*k,x2:v[2]*k+ox,y2:Math.max(v[1],v[3])*k};
+    if(!/Pair$/.test(bt)){o.x2=o.x1;if(v[3]>v[1])o.flip=true;}
+    {const c=colOf(g.getAttribute('color'));if(c)o.col=c;}mol.arrows.push(o);}
   /* and its radical dots */
   for(const g of doc.querySelectorAll('graphic[GraphicType="Symbol"]')){const r=g.querySelector('represent[attribute="Radical"]'),a=r&&nodeMap.get(r.getAttribute('object'));if(!a)continue;
+    /* dots drawn white (colour 1) to hide them: the atom keeps its radical, the dots are not shown */
+    if(g.getAttribute('color')==='1'||/^#?f{3}(f{3})?$/i.test(colOf(g.getAttribute('color'))||'')){if(a.rad)a.radHide=1;continue;}
     const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length!==4||!v.every(isFinite))continue;const st=g.getAttribute('SymbolType')||'Electron';
     if(!a.rad)a.rad=st==='LonePair'?2:1;a.dpos=a.dpos||{};a.dpos.rad={dx:v[0]*k+ox-a.x,dy:v[1]*k-a.y};}
   for(const g of doc.querySelectorAll('page > graphic[GraphicType="Line"][ArrowType]:not([SupersededBy])')){const v=(g.getAttribute('BoundingBox')||'').split(/\s+/).map(Number);if(v.length===4)mol.arrows.push({id:mol.next++,x1:v[2]*k+ox,y1:v[3]*k,x2:v[0]*k+ox,y2:v[1]*k});}
@@ -6225,7 +6272,8 @@ function importCdxml0(text){
   commit();toast('Opened with '+grids.length+' stoichiometry grid'+(grids.length>1?'s':''));
 }
 /* zips written by Reactio Draw (stored, not compressed): open the first drawing inside */
-function openZip(buf,name){const v=new DataView(buf),u=new Uint8Array(buf);let i=0;const pref=['reactio','json','cdxml','rxn','mol','sdf','smi'];const found=[];
+function openZip(buf,name){openZip0(buf,name);fitOnOpen();}
+function openZip0(buf,name){const v=new DataView(buf),u=new Uint8Array(buf);let i=0;const pref=['reactio','json','cdxml','rxn','mol','sdf','smi'];const found=[];
   while(i+30<=u.length&&v.getUint32(i,true)===0x04034b50){const meth=v.getUint16(i+8,true),csz=v.getUint32(i+18,true),nl=v.getUint16(i+26,true),xl=v.getUint16(i+28,true);
     const fn=new TextDecoder().decode(u.subarray(i+30,i+30+nl)),st=i+30+nl+xl;if(meth===0)found.push([fn,new TextDecoder().decode(u.subarray(st,st+csz))]);i=st+csz;}
   found.sort((a,b)=>pref.indexOf(a[0].split('.').pop())-pref.indexOf(b[0].split('.').pop()));
@@ -6236,7 +6284,7 @@ if(window.rdDesktop){window.rdDesktop.onOpenFile(f=>{
     const whole=f.text&&(/\.(json|reactio)$/i.test(f.name)||CMTRX.test(f.text));
     if(!whole&&(mol.atoms.length||mol.texts.length)){newTab(null,f.name.replace(/\.[^.]+$/,''));}
     else if(!whole){const t=TABS.list.find(t=>t.id===TABS.cur);if(t&&/^Document \d+$/.test(t.name)){t.name=f.name.replace(/\.[^.]+$/,'');saveTabs();renderTabs();}}
-    if(f.bytes&&/\.docx$/i.test(f.name)){openExternal(f.name,new Uint8Array(f.bytes),'');return;}if(f.bytes&&/\.cdx$/i.test(f.name))importCdxBytes(new Uint8Array(f.bytes),f.name);else if(f.bytes)openZip(new Uint8Array(f.bytes).buffer,f.name);else importText(f.name,f.text);});
+    if(f.bytes&&/\.docx$/i.test(f.name)){openExternal(f.name,new Uint8Array(f.bytes),'');return;}if(f.bytes&&/\.cdx$/i.test(f.name))importCdxBytes(new Uint8Array(f.bytes),f.name);else if(f.bytes)openZip(new Uint8Array(f.bytes).buffer,f.name);else importText(f.name,f.text);fitOnOpen();});
   document.documentElement.classList.add('desktop');}
 /* Reactio Draw.app / ReactioDraw.exe: a file opened from Finder or Explorer (double-click, Open With) */
 /* a drawing sent from Word on a Mac (Reactio Draw tab → Edit in Reactio Draw): the picture's alt text, with the drawing in it.
@@ -6256,7 +6304,10 @@ async function wordReturn(t){if(!window.rdNative||!t||!t.word)return false;close
   const r=await N.call('wordReturn',{wid:t.word.id,png:N.b64(pngTagged(pic.png,tag)),svg,tag:size+tag});
   if(!r||!r.ok){toast('Could not send the drawing back to Word'+(r&&r.err?': '+r.err:''),true);return false;}
   markClean(t);toast(r.word?'Drawing updated in Word':'Saved for Word: press Update on the Reactio Draw tab in Word (allow Reactio Draw to control Word to make it automatic)',!r.word);return true;}
-function openExternal(name,u,path){if(/\.rdword$/i.test(name)){wordEditOpen(name,new TextDecoder().decode(u));return;}if(/\.docx$/i.test(name)){wordOpen(u,name).catch(e=>toast('Could not read '+name+': '+(e&&e.message||e),true));return;}let text=null;if(!/\.(cdx|zip)$/i.test(name))text=new TextDecoder().decode(u);
+/* every file opened (File → Open, a drop, Explorer or Finder) is shown whole: fit to the window once it is on the sheet */
+function fitOnOpen(){setTimeout(()=>requestAnimationFrame(()=>{try{fitAll();}catch(e){}}),0);}
+function openExternal(name,u,path){openExternal0(name,u,path);if(!/\.docx$/i.test(name))fitOnOpen();}
+function openExternal0(name,u,path){if(/\.rdword$/i.test(name)){wordEditOpen(name,new TextDecoder().decode(u));return;}if(/\.docx$/i.test(name)){wordOpen(u,name).catch(e=>toast('Could not read '+name+': '+(e&&e.message||e),true));return;}let text=null;if(!/\.(cdx|zip)$/i.test(name))text=new TextDecoder().decode(u);
   let cdxDoc=null;if(/\.cdx$/i.test(name)){try{cdxDoc=rdFromCdxml(cdxmlOfCdx(u));}catch(e){}}
   const whole=!!cdxDoc||text!=null&&(/\.(json|reactio)$/i.test(name)||CMTRX.test(text));
   if(!whole&&(mol.atoms.length||mol.texts.length||mol.arrows.length))newTab(null,name.replace(/\.[^.]+$/,''));
@@ -6778,7 +6829,7 @@ function atomDecor(a,lab){
   const items=[];
   const plainOnLabel=lab&&a.cs!=='c'&&a.cang===undefined&&!a.cpos&&!!a.chg&&chgSup(a).free;
   if(a.chg&&!plainOnLabel)items.push(['chg',0]);
-  if(a.rad)items.push(['rad',0]);for(let i=0;i<(a.lp||0);i++)items.push(['lp',i]);
+  if(a.rad&&!a.radHide)items.push(['rad',0]);for(let i=0;i<(a.lp||0);i++)items.push(['lp',i]);
   if(a.att)items.push(['att',0]);if(a.pd)items.push(['pd',0]);if(a.mark&&lab)items.push(['mark',0]);if(a.hm==='dash')items.push(['hdash',0]);
   if(a.wcut!==undefined&&a.wcut!==null)items.push(['stub',0]);
   if(!items.length&&!(a.hm==='dot')&&!(a.wcut===null)&&!a.mark)return s;
@@ -6890,6 +6941,12 @@ function arrowSVG(r,o){
   if(r.shaft==='retro'){const g=2.6*hs,H=9*hs,W=7*hs,e=l-H*(1-g/W)-0.5;
     for(const k of [-1,1])s+=`<line x1="${r.x1+nx*g*k}" y1="${r.y1+ny*g*k}" x2="${r.x1+ux*e+nx*g*k}" y2="${r.y1+uy*e+ny*g*k}" style="stroke:${col}" stroke-width="${aw}"/>`;
     return s+headSVG({x:r.x2,y:r.y2},ux,uy,'open',H,W,1,col,aw);}
+  if(r.shaft==='eq'&&r.curve){const g=2.4*hs,full=r.head==='full',Q=arrowPts(r);
+    /* a curved equilibrium arrow (round a catalytic cycle): two arcs side by side, each with its half head, running opposite ways */
+    const off=(sg)=>Q.map((q,i)=>{const a=Q[Math.max(0,i-1)],b=Q[Math.min(Q.length-1,i+1)],L2=Math.hypot(b.x-a.x,b.y-a.y)||1;return {x:q.x-(b.y-a.y)/L2*g*sg,y:q.y+(b.x-a.x)/L2*g*sg};});
+    const back=(P,d)=>{let acc=0;for(let i=P.length-1;i>0;i--){const t=Math.hypot(P[i].x-P[i-1].x,P[i].y-P[i-1].y);if(acc+t>=d){const f=(d-acc)/(t||1);return {x:P[i].x+(P[i-1].x-P[i].x)*f,y:P[i].y+(P[i-1].y-P[i].y)*f};}acc+=t;}return P[0];};
+    const one=P=>{const e=P[P.length-1],q=back(P,hl*0.9),L2=Math.hypot(e.x-q.x,e.y-q.y)||1;return line(trimEnd(P,hl*0.8))+headSVG(e,(e.x-q.x)/L2,(e.y-q.y)/L2,full?'full':'half',hl,hw,-1,col,aw);};
+    return s+one(off(-1))+one(off(1).reverse());}
   if(r.shaft==='eq'){const g=2.4*hs,bias=r.eq||0,full=r.head==='full';
     const seg=(fx,fy,tx,ty,sideSign,short)=>{let ax=fx,ay=fy,bx2=tx,by2=ty;if(short){const k=0.22;ax=fx+(tx-fx)*k;ay=fy+(ty-fy)*k;bx2=tx-(tx-fx)*k;by2=ty-(ty-fy)*k;}
       const L2=Math.hypot(bx2-ax,by2-ay)||1,vx=(bx2-ax)/L2,vy=(by2-ay)/L2;const P=trimEnd([{x:ax,y:ay},{x:bx2,y:by2}],hl*0.8);
@@ -8313,6 +8370,9 @@ $('docTabs').addEventListener('click',e=>{const c=e.target.closest('[data-close]
     if(t)closeTabAsk(t.id);return;}
   if(e.target.closest('#tabNew')){newTab();return;}const t=e.target.closest('[data-tab]');if(t)switchTab(t.dataset.tab);});
 /* closing a tab with a drawing asks once in place: a second click on × within 3 s confirms */
+/* the mouse wheel scrolls the row of tabs sideways when they do not all fit */
+$('docTabs').addEventListener('wheel',e=>{const box=e.currentTarget;if(box.scrollWidth<=box.clientWidth+1)return;
+  const d=Math.abs(e.deltaY)>Math.abs(e.deltaX)?e.deltaY:e.deltaX;if(!d)return;e.preventDefault();e.stopPropagation();box.scrollLeft+=d*(e.deltaMode===1?16:e.deltaMode===2?box.clientWidth:1);},{passive:false});
 let closeArm=null;$('docTabs').addEventListener('dblclick',e=>{const t=e.target.closest('[data-tab]');if(!t||e.target.closest('.x'))return;const tab=TABS.list.find(x=>x.id===t.dataset.tab);
   const inp=document.createElement('input');inp.value=tab.name;inp.setAttribute('aria-label','Tab name');t.querySelector('span').replaceWith(inp);inp.focus();inp.select();
   const done=ok=>{if(ok&&inp.value.trim())tab.name=inp.value.trim().slice(0,60);saveTabs();renderTabs();};

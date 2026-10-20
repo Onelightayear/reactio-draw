@@ -1,5 +1,18 @@
 # Reactio Draw 1.1
 
+## Changes being tested
+
+- Opening CDXML and CDX files:
+  - a bold double or triple bond stays double or triple, its main line bold;
+  - labels with a generic group (OR, OR2, NR2, CO2R, NHAr) stay one label, and R, R1, R', Ar and X are no longer marked as unrecognized (Ar is the aryl group, not argon);
+  - captions written in formula style keep their text, with the digits as subscripts; centred and right-aligned captions stay where they were;
+  - curved arrows drawn on a structure, curved equilibrium arrows (two arcs), brackets, and ‡, † and charges next to them are kept;
+  - dots hidden in white stay hidden.
+- A group bonded to a metal (PPh2 on Ru, NMe2 on Pd) is no longer marked as having too many bonds.
+- Opening a file shows the whole drawing (fit to the window).
+- The mouse wheel scrolls the row of tabs when they do not all fit.
+- New color theme, Color-blind safe: the eight colors of Okabe and Ito, which people with any kind of color blindness can tell apart.
+
 ## What changed since 1.0.1
 
 - Top bar: a click on a group's grip ⋮ folds the group into one named menu (and back); Settings → Interface → Top bar → Compact puts everything but the file buttons into four menus in one row.
