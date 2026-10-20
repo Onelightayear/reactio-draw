@@ -26,7 +26,7 @@ cat > "$b/Info.plist" <<PL
 <key>CFBundleName</key><string>Reactio Draw</string><key>CFBundleDisplayName</key><string>Reactio Draw</string>
 <key>CFBundleIdentifier</key><string>org.reactiodraw.editor</string><key>NSAppleEventsUsageDescription</key><string>Reactio Draw puts a drawing you edited back into Word (Reactio Draw tab in Word).</string><key>NSHumanReadableCopyright</key><string>© 2026 Pavel Sakharov. GNU AGPL v3 or later.</string><key>CFBundleExecutable</key><string>ReactioDraw</string>
 <key>CFBundleIconFile</key><string>ReactioDraw</string><key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.1</string><key>LSMinimumSystemVersion</key><string>11.0</string>
+<key>CFBundleShortVersionString</key><string>1.1.1</string><key>LSMinimumSystemVersion</key><string>11.0</string>
 <key>NSHighResolutionCapable</key><true/><key>NSPrincipalClass</key><string>NSApplication</string>
 <key>CFBundleDocumentTypes</key><array>
 <dict><key>CFBundleTypeName</key><string>Reactio Draw document</string><key>CFBundleTypeRole</key><string>Editor</string><key>LSHandlerRank</key><string>Owner</string>

@@ -1,6 +1,6 @@
-# Reactio Draw 1.1
+# Reactio Draw 1.1.1
 
-## Changes being tested
+## What changed since 1.1
 
 - Opening CDXML and CDX files:
   - a bold double or triple bond stays double or triple, its main line bold;
@@ -13,7 +13,7 @@
 - The mouse wheel scrolls the row of tabs when they do not all fit.
 - New color theme, Color-blind safe: the eight colors of Okabe and Ito, which people with any kind of color blindness can tell apart.
 
-## What changed since 1.0.1
+## 1.1
 
 - Top bar: a click on a group's grip ⋮ folds the group into one named menu (and back); Settings → Interface → Top bar → Compact puts everything but the file buttons into four menus in one row.
 - Arrows: while you drag, the arrow itself is shown, faint, with its curve and heads. Curved (mechanism) arrows start and end on an atom or the middle of a bond, a small gap off it (Settings → Drawing → Ends of curved arrows: touching, small or larger gap). At an atom with a label the arrow stops short of the letters.
