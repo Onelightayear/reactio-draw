@@ -1,4 +1,4 @@
-# Reactio Draw 1.1.1
+# Reactio Draw 1.2
 
 ## What changed since 1.1
 
