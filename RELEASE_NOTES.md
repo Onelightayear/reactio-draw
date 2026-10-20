@@ -1,3 +1,7 @@
+# Not yet released
+
+- XYZ export for quantum chemistry: File → Export as → XYZ (and Copy to clipboard → XYZ), `export {format: "xyz"}` in the API and `reactio convert in.cdx -o out.xyz`. Each structure gets its hydrogens, a conformer search (OpenChemLib torsion library, MMFF94s+, lowest kept), the charge and spin multiplicity in the comment line, and a check that the 3D stereocentres and double bonds match the drawing. Structures MMFF94 cannot type (boron, metals) still get a 3D shape, marked as not minimised. The work runs in a background worker, so the editor stays responsive.
+
 # Reactio Draw 1.2
 
 ## What changed since 1.1
