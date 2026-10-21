@@ -26,7 +26,7 @@ Where it is:
   drawings, one under another: reactio convert paper.docx -o all.cdxml
   Options: -o, --output  file or folder;  --format  output format when -o is a folder (or for the screen);
            --scale N  PNG size (3 by default);  --dpi N  TIFF resolution (600);  --style NAME  drawing style (ACS, Nature, RSC…);
-           --json  answers as JSON;  -h, --help  this text.
+           --json  answers as JSON;  -V, --version  the version;  -h, --help  this text.
   Exit codes: 0 done, 1 failed, 2 wrong command, 3 check found problems.
 
 Examples

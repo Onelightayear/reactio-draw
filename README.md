@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/1637fe6d-b6d1-4ec5-9d68-9a41d62ef0c8
 | | |
 | --- | --- |
 | **Drawing** | drawing with the mouse as usual, with alignment guides while you drag (edges and centres snap to nearby molecules, arrows and captions); adding groups with hotkeys at the hotspot (the atom or bond under the pointer, marked green; after each key it moves on to the new group, so a chain or a substituted ring is typed key after key, and the arrow keys move it); your own labels and templates; bold or italic single characters (tBu), tBu / iPr prefixes plain, italic or italic superscript in one click; reaction and mechanism arrows, brackets and a charge corner, shapes, sandwich complexes, 3D rotation and 3D shapes, orbitals; Merge structures joins structures drawn on top of each other |
-| **Reactions** | a reagent table on the sheet or below it, for the selected reaction or the whole sheet: roles, limiting reagent, equivalents, masses, volumes, concentrations, yield, conditions; multistep schemes; compound numbers that renumber themselves |
+| **Reactions** | a reagent table on the sheet or below it, for the selected reaction or the whole sheet: roles, limiting reagent, equivalents, masses, volumes, concentrations, yield, conditions; reagents written as text (MeMgBr, K2CO3) are counted too; multistep schemes; compound numbers that renumber themselves |
 | **Analysis** | formula, molecular weight, exact mass, m/z, isotope pattern, elemental analysis, SMILES, InChI and InChIKey (offline), ¹H/¹³C/¹⁹F/³¹P NMR prediction from measured spectra; structure checks as you draw (valence, atoms on top of each other, stray bonds, wedges), each kind can be switched off |
 | **Names** | common names everywhere; systematic names to structures (OPSIN) and structures to IUPAC names (openclatura) in the apps |
 | **Files** | its own .reactio documents; CDXML, CDX, MOL and SDF (V2000 and V3000), RXN, SMILES and CXSMILES, ORD; pictures as SVG, PNG, EPS, TIFF; pictures on the sheet travel in CDXML and CDX; Word and PowerPoint |
@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/1637fe6d-b6d1-4ec5-9d68-9a41d62ef0c8
 | **Working fast** | scrolling in every direction (two fingers, or Shift+wheel sideways) and zoom to the pointer; a hotkey for every button and command, all reassignable, with search by name or by key; your own templates and labels on keys |
 | **API and command line** | a local API for scripts (Python, R, curl) in the desktop apps; a command line, `reactio`, that renders, converts and checks files without opening a window ([Command line.txt](Command%20line.txt)); and the same commands for web pages that embed the editor ([EMBEDDING.md](EMBEDDING.md)) |
 | **Styles** | ACS, RSC, Nature, Angewandte and more, colour themes (one of them color-blind safe), dark sheets |
-| **Light** | the whole editor is one web page of 3.6 MB (about 1.3 MB over the network; 5.8 MB as a single offline file with the NMR tables), with no server and nothing to install; the apps are about 20–28 MB to download. The NMR tables (2.2 MB) come only when you first predict a spectrum. For comparison, the Ketcher npm package is about 110 MB and Kekule.js about 42 MB |
+| **Light** | the whole editor is one web page of 4.0 MB (about 1.4 MB over the network; 6.2 MB as a single offline file with the NMR tables), with no server and nothing to install; the apps are about 20–28 MB to download. The NMR tables (2.2 MB) come only when you first predict a spectrum. For comparison, the Ketcher npm package is about 110 MB and Kekule.js about 42 MB |
 
 
 ## Download
@@ -99,6 +99,12 @@ program's object.
   and `word-addin/Reactio Draw.dotm` (the Word tab) into `macapp/`, then run `macapp/Install Reactio Draw.command` (needs Apple's Command Line Tools).
 
 All libraries are in the repository (`third_party/` folders), so the builds work offline.
+
+## How to cite
+
+If Reactio Draw helped your work, please cite it: GitHub's **Cite this repository** button (on the right of the
+repository page) gives the reference in APA and BibTeX, from `CITATION.cff`. Each release is archived on Zenodo
+with its own DOI.
 
 ## Licence
 

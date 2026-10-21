@@ -23,6 +23,7 @@ It includes or uses the components below; each keeps its own license. Full texts
 | Data | Used for | License | Note |
 | --- | --- | --- | --- |
 | NMR shift tables derived from nmrshiftdb2 (export 2026-03-15, measured spectra) | NMR prediction | nmrshiftdb2 Database License (`LICENSES/nmrshiftdb2-Database-License.txt`) | Contains information from nmrshiftdb2 (https://nmrshiftdb.nmr.uni-koeln.de), which is made available here under the nmrshiftdb2 Database License. The derivative tables and the code that makes them are in `data/nmr/`. |
+| Abbreviations and reagent names from the Beilstein Chemical Lookup Collection (BChemLookup, 2026-10-08) | atom labels (OTES, DMTr, 2-py…), names to structures, reagents written as text | CC0 1.0 Universal | Beilstein-Institut, https://github.com/Beilstein-Institut/BChemLookup ; only entries Reactio Draw did not know, each group rewritten with its attachment atom first |
 
 ## Used but not included
 
