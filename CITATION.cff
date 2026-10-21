@@ -11,6 +11,7 @@ authors:
   - family-names: "Sakharov"
     given-names: "Pavel"
     orcid: "https://orcid.org/0000-0001-7746-7387"
+doi: "10.5281/zenodo.23547490"
 repository-code: "https://github.com/Paivel/reactio-draw"
 url: "https://paivel.github.io/reactio-draw/web/"
 license: AGPL-3.0-or-later

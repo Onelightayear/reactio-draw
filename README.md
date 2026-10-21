@@ -102,9 +102,13 @@ All libraries are in the repository (`third_party/` folders), so the builds work
 
 ## How to cite
 
-If Reactio Draw helped your work, please cite it: GitHub's **Cite this repository** button (on the right of the
-repository page) gives the reference in APA and BibTeX, from `CITATION.cff`. Each release is archived on Zenodo
-with its own DOI.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23547490.svg)](https://doi.org/10.5281/zenodo.23547490)
+
+If Reactio Draw helped your work, please cite it: Sakharov, P. *Reactio Draw*, Zenodo,
+[doi:10.5281/zenodo.23547490](https://doi.org/10.5281/zenodo.23547490). This DOI always leads to the latest
+version; each release also has a DOI of its own (1.3: [10.5281/zenodo.23547491](https://doi.org/10.5281/zenodo.23547491)).
+GitHub's **Cite this repository** button (on the right of the repository page) gives the reference in APA and
+BibTeX, from `CITATION.cff`.
 
 ## Licence
 

@@ -7,6 +7,7 @@
 - Reagents written as text: a caption such as MeMgBr, K2CO3 or nBuLi stays text on the sheet and is counted in the reagent table with its formula and mass. The new button Count text as a structure (at the end of the Text group) attaches the structure to a text or removes it; Shift+click draws the structure instead. These reagents are also in the reaction SMILES.
 - More abbreviations and reagent names, from the Beilstein Chemical Lookup Collection (BChemLookup, CC0).
 - Structure checks: a wedge or hash to a drawn H atom is checked on the right atom (a correct drawing was marked "not at a stereocentre").
+- Links in the Windows, Mac and Linux apps (Info: what is new, the project page, the credits) open in the computer's own browser.
 - The version is shown in Info, with a link to what is new; the local API has `version` and the command line `reactio --version`.
 - How to cite: CITATION.cff, and each release is archived on Zenodo with its own DOI.
 - The code is easier to read: the CSS and JavaScript of index.html are laid out one statement per line, and ARCHITECTURE.md is a map of the file for anyone who wants to change it.
