@@ -116,6 +116,11 @@ final class Bridge: NSObject, WKScriptMessageHandler, NSWindowDelegate {
             guard let path = m["path"] as? String, !path.isEmpty, let d = Data(base64Encoded: m["b64"] as? String ?? "") else { reply(id, ["ok": false, "err": "no file"]); return }
             if !pathAllowed(path) { reply(id, ["ok": false, "ask": true]); return }
             do { try d.write(to: URL(fileURLWithPath: path), options: .atomic); reply(id, ["ok": true]) } catch { reply(id, ["ok": false, "err": "\(error.localizedDescription)"]) }
+        case "link":
+            // a link on the page (Credits, what is new) opens in the default browser; only web addresses
+            if let s = m["url"] as? String, let u = URL(string: s), ["http", "https"].contains(u.scheme?.lowercased() ?? "") {
+                NSWorkspace.shared.open(u); reply(id, ["ok": true])
+            } else { reply(id, ["ok": false]) }
         case "quit":
             reply(id, ["ok": true]); Bridge.quitOK = true; NSApp.terminate(nil)
         case "wordReturn":

@@ -3210,6 +3210,18 @@ function kdOf(st) {
     },
     onOpenFile: () => {}
   };
+  /* a link to a web site (Credits, what is new, the project page) opens in the computer's own browser: the app's window
+     shows only the editor */
+  document.addEventListener(
+    'click',
+    e => {
+      const l = e.target.closest && e.target.closest('a[href]');
+      if (!l || !/^https?:\/\//i.test(l.href)) return;
+      e.preventDefault();
+      call('link', { url: l.href });
+    },
+    true
+  );
   /* file pickers become the Mac's own Open panel */
   const click0 = HTMLInputElement.prototype.click;
   HTMLInputElement.prototype.click = function () {
