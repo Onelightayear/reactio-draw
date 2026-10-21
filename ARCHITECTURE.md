@@ -17,8 +17,8 @@ your changes.
 | CSS | lines 1–2713 | all styles; colour tokens on `:root`, dark theme, the top bar and panels |
 | HTML | 2713–3155 | the layout (below); every button carries a `data-tool`, `data-act` or `data-tab` attribute |
 | Desktop bridge | 3156–3220 | how the page talks to the Windows, Mac and Linux apps (`window.rdNative`, `rdDesktop`) |
-| **Editor code** | 3220–41300 | everything else in this guide |
-| Bundled libraries and data | 41300–end | each a single very long line; skip them when reading (below) |
+| **Editor code** | 3220–41350 | everything else in this guide |
+| Bundled libraries and data | 41350–end | each a single very long line; skip them when reading (below) |
 
 The HTML layout: `#docTabs` (document tabs), `#tools` (left toolbar), `#cv` with `#topbar` and the
 drawing `<svg id="mol">`, the right panel `aside.info` with its panes (`analysis`, `infow`, `chars`, `lib`,
@@ -56,7 +56,7 @@ A `.reactio` file is `{rd: 1, state: S}`. Each tab is its own `S`, kept in the b
 | State, undo, saving | `defaults`, `cleanState`, `snap`, `undo`, `redo`, `save`, `commit` |
 | Chemistry: valence, labels, formula | `valenceOf`, `implicitH`, `resolveLabel`, `setLabel`, `chemParse`, `countsOf`, `mwOf`, `exactOf`, `isoPattern`; the names lists `TRIVIAL`, `NICK` and `BCL` (BChemLookup); text as a structure `textStructSmiles` |
 | SMILES in and out | `parseSmiles`, `fragSmiles`, `currentSmiles`, `kekulize` |
-| Layout and Clean Up | `layoutG`, `placeRing`, `placeSystem` (fused rings), `placeGraph`, `doClean`, `cleanFragments` (keeps R/S and E/Z), `cleanReaction` |
+| Layout and Clean Up | `layoutG`, `layoutStart` (where a layout begins), `placeRing`, `placeSystem` (fused rings), `placeGraph`, `doClean`, `cleanFragments` (keeps R/S and E/Z), `cleanReaction` |
 | Drawing the sheet | `render`, `arrowSVG`, `bracketSVG`, `shapeSVG`, `orbitalSVG`, `pieSVG`, `radSVG`, `tableSVG` |
 | Mouse, pen and touch | `touchDown`, `touchMove`, `touchUp`, `endDrag`, `runTool`, `hitAt`, `dragHandle` |
 | Keyboard drawing and hotkeys | `atomKey`, `bondKey`, `navHotspot`, `renderKeys` |

@@ -6663,10 +6663,12 @@ function kdOf(st) {
       /* bridged systems (two rings sharing three atoms or more: norbornane, morphine, strychnine) keep the ring-by-ring layout */
       for (let i = 0; i < S.length; i++)
         for (let j = i + 1; j < S.length; j++) if (sharedN(S[i], S[j]) > 2) return false;
+      /* the seed is a hexagon when there is one (the most fused): hexagons are laid regular first, and a five-membered ring
+         between them takes up the strain, as acenaphthene is drawn (naphthalene flat, the five-membered ring slightly wide) */
       const seed = [...S].sort(
         (a, b) =>
-          fusedN(b) - fusedN(a) ||
           (rings[b].length === 6) - (rings[a].length === 6) ||
+          fusedN(b) - fusedN(a) ||
           rings[b].includes(u) - rings[a].includes(u)
       )[0];
       {
@@ -6830,15 +6832,21 @@ function kdOf(st) {
             x1 = -1e9,
             y0 = 1e9,
             y1 = -1e9;
-          for (const p of pts) {
-            const x = p.x * cs - p.y * sn,
-              y = p.x * sn + p.y * cs;
-            x0 = Math.min(x0, x);
-            x1 = Math.max(x1, x);
-            y0 = Math.min(y0, y);
-            y1 = Math.max(y1, y);
+          const tp = pts.map(p => ({ x: p.x * cs - p.y * sn, y: p.x * sn + p.y * cs }));
+          for (const q of tp) {
+            x0 = Math.min(x0, q.x);
+            x1 = Math.max(x1, q.x);
+            y0 = Math.min(y0, q.y);
+            y1 = Math.max(y1, q.y);
           }
-          const sc = on * 100 + (x1 - x0) - (y1 - y0);
+          /* symmetric: mirrored about an upright axis (acenaphthene with its naphthalene flat, fluorene, carbazole) or the
+             same turned half round (pyrene, perylene): the way such a system is drawn; then wide rather than tall */
+          const mx = (x0 + x1) / 2,
+            my = (y0 + y1) / 2,
+            symBy = f => tp.every(q => tp.some(o => Math.hypot(f(q).x - o.x, f(q).y - o.y) < L * 0.1)),
+            sym =
+              symBy(q => ({ x: 2 * mx - q.x, y: q.y })) || symBy(q => ({ x: 2 * mx - q.x, y: 2 * my - q.y }));
+          const sc = on * 1000 + (sym ? 500 : 0) + (x1 - x0) - (y1 - y0);
           if (sc > bestS + 1e-6) {
             bestS = sc;
             bestR = r;
@@ -7011,11 +7019,49 @@ function kdOf(st) {
     }
     return Object.values(m);
   }
+  /* where a layout starts: in the largest fused ring system (naphthalene of an acenaphthene, the steroid core), on its most
+     fused ring, so the system is laid out first, on the hexagon grid, and everything else grows from it; null without one */
+  function layoutStart(g, comp) {
+    const n = g.nodes.length,
+      adj = Array.from({ length: n }, () => []);
+    g.edges.forEach((e, i) => {
+      adj[e.a].push([e.b, i]);
+      adj[e.b].push([e.a, i]);
+    });
+    const inC = new Set(comp),
+      rings = findRingsG(n, g.edges, adj).filter(r => r.every(v => inC.has(v)));
+    if (rings.length < 2) return null;
+    const shared = (a, b) => a.filter(v => b.includes(v)).length,
+      sys = rings.map((_, i) => i),
+      f = x => (sys[x] === x ? x : (sys[x] = f(sys[x])));
+    for (let i = 0; i < rings.length; i++)
+      for (let j = i + 1; j < rings.length; j++) if (shared(rings[i], rings[j]) >= 2) sys[f(i)] = f(j);
+    const groups = {};
+    rings.forEach((_, i) => (groups[f(i)] = groups[f(i)] || []).push(i));
+    let best = null,
+      bn = 0;
+    for (const S of Object.values(groups)) {
+      if (S.length < 2) continue;
+      /* a bridged system (rings sharing three atoms or more: morphine, strychnine, cyclophanes) keeps the usual start */
+      if (S.some((i, k) => S.some((j, l) => l > k && shared(rings[i], rings[j]) > 2))) continue;
+      const na = new Set(S.flatMap(i => rings[i])).size;
+      if (na > bn) {
+        bn = na;
+        best = S;
+      }
+    }
+    if (!best) return null;
+    const fused = i => best.filter(o => o !== i && shared(rings[i], rings[o]) >= 2).length,
+      seed = [...best].sort(
+        (a, b) => (rings[b].length === 6) - (rings[a].length === 6) || fused(b) - fused(a) || a - b
+      )[0];
+    return Math.min(...rings[seed]);
+  }
   function placeGraph(g, anchor) {
     const pos = Array(g.nodes.length).fill(null);
     let ox = 0;
     for (const comp of compsG(g)) {
-      const st = comp.reduce((m, i) => (i < m ? i : m), comp[0]);
+      const st = layoutStart(g, comp) ?? comp.reduce((m, i) => (i < m ? i : m), comp[0]);
       pos[st] = { x: 0, y: 0 };
       layoutG(g, pos, st, []);
       fixEZ(g, pos);
@@ -7606,9 +7652,15 @@ function kdOf(st) {
         order = [...fr.keys()].sort((i, j) => deg[j] - deg[i] || i - j);
       const starts = [
         ...new Set(
-          [order[0], 0, order[1], order[2], fr.length - 1, order[Math.floor(fr.length / 2)]].filter(
-            i => i != null && i < fr.length
-          )
+          [
+            layoutStart(g, [...fr.keys()]),
+            order[0],
+            0,
+            order[1],
+            order[2],
+            fr.length - 1,
+            order[Math.floor(fr.length / 2)]
+          ].filter(i => i != null && i < fr.length)
         )
       ];
       let pos = null,
@@ -17108,7 +17160,7 @@ svg#mol{--accent:${L};--accent-soft:${accMix(L, '#ffffff', 0.86)}}`;
     const pos = Array(g.nodes.length).fill(null);
     let ox = 0;
     for (const comp of compsG(g)) {
-      const st = comp.reduce((m, i) => (i < m ? i : m), comp[0]);
+      const st = layoutStart(g, comp) ?? comp.reduce((m, i) => (i < m ? i : m), comp[0]);
       pos[st] = { x: 0, y: 0 };
       layoutG(g, pos, st, []);
       fixEZ(g, pos);
