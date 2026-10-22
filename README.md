@@ -9,7 +9,7 @@ and PowerPoint or to and from other chemistry editors as CDXML and CDX files. It
 > for ORCA, Gaussian or xtb. See [XYZ export](#xyz-export-for-quantum-chemistry-this-fork) below. Everything else is
 > the original program. The apps under the download link are the original version, without the XYZ export.
 
-| [▶ Open in the browser](https://github.com/Onelightayear/reactio-draw/tree/main/web) | [⬇ Apps for Windows, Mac and Linux](https://github.com/Paivel/reactio-draw/releases/latest) | [📖 Guide (PDF)](docs/Reactio%20Draw%20-%20Getting%20started.pdf) |
+| [▶ Open in the browser](https://onelightayear.github.io/reactio-draw/web/) | [⬇ Apps for Windows, Mac and Linux](https://github.com/Paivel/reactio-draw/releases/latest) | [📖 Guide (PDF)](docs/Reactio%20Draw%20-%20Getting%20started.pdf) |
 | :---: | :---: | :---: |
 | nothing to install | work fully offline | every function and button explained |
 
@@ -67,7 +67,7 @@ done it lists anything that needs a look and offers **Save .xyz** and **Copy**.
 - A stereocentre or double bond left undrawn gets one configuration picked for it, and the box says so.
 - It runs offline in a background worker and needs nothing installed: it uses the OpenChemLib already in the page.
 
-**Try it:** download [`index.html`](index.html) from this repository and open it in Chrome, Edge or Firefox. For
+**Try it:** [open it in the browser](https://onelightayear.github.io/reactio-draw/web/), or download [`index.html`](index.html) from this repository and open it in Chrome, Edge or Firefox. For
 the Windows app, build it from this repository as described under [Building](#building).
 
 ## Download
