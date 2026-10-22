@@ -16,6 +16,7 @@ type request struct {
 	B64  string `json:"b64"`
 	Msg  string `json:"msg"`
 	Path string `json:"path"`
+	URL  string `json:"url"`
 }
 
 func reply(id string, v interface{}) {
@@ -125,6 +126,8 @@ func handle(s string) {
 		}(r.ID, r.Name)
 	case "cliDone":
 		cliDone(r.Msg)
+	case "link":
+		reply(r.ID, map[string]interface{}{"ok": openLink(r.URL)})
 	case "log":
 		logf("page: %s", r.Msg)
 	case "clipown":

@@ -90,9 +90,10 @@ function rd(op, args) {
 | `addRadar` | `{axes: [{label, value}], x, y, size, min, max, step, shape, zones, color, fill, textSize}` | draws a sensitivity screen |
 | `prefixStyle` | `{mode: "plain"\|"italic"\|"sup"}` | how t, i, s, n of tBu, iPr… are written |
 | `help` | — | the list of commands |
+| `version` | — | `{name, version}` of this Reactio Draw |
 
 SMILES in the answers are canonical: the same structure gives the same SMILES however it was drawn,
-and they carry the drawn stereochemistry. Names: the built-in list of about 500 common names and abbreviations (THF, DIPEA, aspirin…)
+and they carry the drawn stereochemistry. Names: the built-in list of about 600 common names and abbreviations (THF, DIPEA, AIBN, aspirin…)
 works everywhere, in a web page too. Other systematic names need the desktop apps: `addName` and
 `smilesFromName` read them with OPSIN, and `name` (structure → IUPAC name) uses openclatura; in a web
 page these two answer with an error for anything outside the list.

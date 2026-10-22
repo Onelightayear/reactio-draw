@@ -29,6 +29,8 @@ cp "$d/reactio_name.py" "$b/Resources/reactio_name.py" 2>/dev/null || true
 cp "$d/ReactioDraw.icns" "$b/Resources/ReactioDraw.icns"
 # licenses travel inside the app
 for f in LICENSE LICENSE.txt THIRD-PARTY-NOTICES.md; do [ -f "$d/$f" ] && cp "$d/$f" "$b/Resources/"; done; [ -d "$d/LICENSES" ] && cp -R "$d/LICENSES" "$b/Resources/" || true
+# the version comes from the page (const RD_VERSION = '1.3' in index.html)
+v=$(sed -n "s/.*const RD_VERSION *= *'\([0-9.]*\)'.*/\1/p" "$d/index.html" | head -1); [ -n "$v" ] || v=0
 cat > "$b/Info.plist" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -39,7 +41,7 @@ cat > "$b/Info.plist" <<PL
 <key>CFBundleExecutable</key><string>ReactioDraw</string>
 <key>CFBundleIconFile</key><string>ReactioDraw</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.2</string>
+<key>CFBundleShortVersionString</key><string>$v</string>
 <key>LSMinimumSystemVersion</key><string>11.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
