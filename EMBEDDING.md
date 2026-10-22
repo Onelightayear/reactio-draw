@@ -63,7 +63,7 @@ function rd(op, args) {
 | `set` | `{text, format}` | replaces the whole drawing; `format` (smiles, mol, sdf, rxn, cdxml, json) is found from the text when left out |
 | `addSmiles` | `{smiles, x, y}` | draws the structure (R/S from `@`/`@@` become wedges; a CXSMILES part such as `\|&1:1\|` sets stereo groups) |
 | `import` | `{format: "smiles"\|"mol"\|"rxn"\|"sdf"\|"cdxml", text}` | adds the structures from the text |
-| `export` | `{format: "smiles"\|"mol"\|"sdf"\|"rxn"\|"cdxml"\|"svg"\|"json"}` | the drawing in that format |
+| `export` | `{format: "smiles"\|"mol"\|"sdf"\|"rxn"\|"cdxml"\|"xyz"\|"svg"\|"json"}` | the drawing in that format; `xyz` gives 3D coordinates for quantum chemistry (below) |
 | `image` | `{text, format, output: "svg"\|"png", scale}` | a picture of any structure or reaction, without touching the sheet (PNG as base64) |
 | `picture` | `{scale}` | the sheet as a PNG (base64) |
 | `readOnly` | `{on: true\|false}` | view only, or editable again |
@@ -96,6 +96,17 @@ and they carry the drawn stereochemistry. Names: the built-in list of about 500 
 works everywhere, in a web page too. Other systematic names need the desktop apps: `addName` and
 `smilesFromName` read them with OPSIN, and `name` (structure → IUPAC name) uses openclatura; in a web
 page these two answer with an error for anything outside the list.
+
+### 3D coordinates for quantum chemistry
+
+`export {format: "xyz"}` turns every structure on the sheet into 3D coordinates: hydrogens are added, conformers
+are built from OpenChemLib's torsion library, each is minimised with MMFF94s+, and the lowest one is kept. The
+answer is `{xyz, structures}`: `xyz` is a multi-frame XYZ file, one frame per connected structure (the ions of a
+salt one by one), with the charge and spin multiplicity in each comment line (`compound 1 C3H7NO2 charge=0 mult=1
+E(MMFF94s+)=21.5 kcal/mol`). `structures` lists, per structure, `charge`, `multiplicity`, `energy`, `conformers`,
+`stereoKept` (the 3D stereocentres and double bonds match the drawing) and `notes`, or an `error`.
+`maxConformers` (20 per structure) and `maxSeconds` (30, for the whole export, shared out over the structures) limit the search. Elements MMFF94 does not know (B, metals) still get
+a 3D shape, written without minimisation and marked `not minimised`: refine those with xtb or DFT.
 
 ## 4. Examples
 

@@ -11,7 +11,7 @@ Where it is:
            It needs WebKitGTK and a desktop session (on a server: xvfb-run reactio …).
 
   reactio render  <input…> -o <out.svg|.png|.eps|.tiff | folder>   a picture of the drawing
-  reactio convert <input…> -o <out.reactio|.mol|.sdf|.rxn|.smi|.cdxml|.cdx|.json|.svg|.png|.eps|.tiff | folder>
+  reactio convert <input…> -o <out.reactio|.mol|.sdf|.rxn|.smi|.cdxml|.cdx|.xyz|.json|.svg|.png|.eps|.tiff | folder>
   reactio convert <input>  --format smi                             (no -o: text formats go to the screen)
   reactio calc    <input…>     formula, Mol. Wt., exact mass, [M+H]+, elemental analysis of every structure
   reactio nmr     <input>  [--nucleus 1H|13C|19F|31P]                predicted shifts (13C by default)
@@ -33,6 +33,7 @@ Examples
   reactio render scheme.cdxml -o scheme.png --scale 4
   reactio render *.mol -o pictures/ --format svg          (one picture per file; the folder is made if needed)
   reactio convert reaction.cdx -o reaction.rxn
+  reactio convert molecule.cdx -o molecule.xyz             (3D coordinates for quantum chemistry: lowest MMFF94s+ conformer)
   reactio convert paper.docx -o paper.cdxml               (every structure of a Word file, one under another)
   reactio word-clean paper.docx -o "paper (plain).docx"   (the same document with plain pictures)
   reactio convert "CC(=O)Oc1ccccc1C(=O)O" --format mol > aspirin.mol
