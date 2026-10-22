@@ -1,0 +1,28 @@
+{
+  "title": "Reactio Draw",
+  "upload_type": "software",
+  "description": "A free, open-source chemical structure and reaction editor for organic chemists: drawing with the mouse or the keyboard, a reagent table built from the scheme, analysis and HRMS, NMR prediction, CDXML and CDX files, and Word and PowerPoint objects. It runs in the browser or as an app for Windows, Mac and Linux, and can be embedded in other web pages.",
+  "creators": [
+    {
+      "name": "Sakharov, Pavel",
+      "orcid": "0000-0001-7746-7387"
+    }
+  ],
+  "license": "agpl-3.0-or-later",
+  "keywords": [
+    "chemistry",
+    "chemical structure editor",
+    "reaction scheme",
+    "stoichiometry",
+    "cheminformatics",
+    "NMR prediction",
+    "CDXML"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Paivel/reactio-draw",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

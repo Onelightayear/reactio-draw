@@ -2,9 +2,21 @@
 
 - XYZ export for quantum chemistry: File → Export as → XYZ (and Copy to clipboard → XYZ), `export {format: "xyz"}` in the API and `reactio convert in.cdx -o out.xyz`. Each structure gets its hydrogens, a conformer search (OpenChemLib torsion library, MMFF94s+, lowest kept), the charge and spin multiplicity in the comment line, and a check that the 3D stereocentres and double bonds match the drawing. Structures MMFF94 cannot type (boron, metals) still get a 3D shape, marked as not minimised. The work runs in a background worker, so the editor stays responsive; a box at the bottom right shows which structure and conformer is being worked on, with Cancel, and when it is done it offers Save and Copy (the browser shows a Save dialog only right after a click, so it is not opened automatically after a long search). `maxSeconds` (30 s by default) is for the whole export and is shared out over the structures.
 
-# Reactio Draw 1.2
+# Reactio Draw 1.3
 
-## What changed since 1.1
+## What changed since 1.2
+
+- Clean Up keeps the configuration: after the new layout it checks R/S at every centre with wedges and E/Z at every double bond, and puts back what turned over (the mirror image, a branch turned back over its double bond, or the wedges of a centre swapped); when it cannot, the structure stays as drawn and a message says why.
+- Fused rings are laid out as they are usually drawn: the layout starts from the largest ring system and puts it on the hexagon grid, hexagons regular and a five-membered ring between them taking up the strain (acenaphthene with its naphthalene flat), and symmetric when it can be (fluorene, carbazole); substituents grow from it. Bridged systems keep the layout they had.
+- Reagents written as text: a caption such as MeMgBr, K2CO3 or nBuLi stays text on the sheet and is counted in the reagent table with its formula and mass. The new button Count text as a structure (at the end of the Text group) attaches the structure to a text or removes it; Shift+click draws the structure instead. These reagents are also in the reaction SMILES.
+- More abbreviations and reagent names, from the Beilstein Chemical Lookup Collection (BChemLookup, CC0).
+- Structure checks: a wedge or hash to a drawn H atom is checked on the right atom (a correct drawing was marked "not at a stereocentre").
+- Links in the Windows, Mac and Linux apps (Info: what is new, the project page, the credits) open in the computer's own browser.
+- The version is shown in Info, with a link to what is new; the local API has `version` and the command line `reactio --version`.
+- How to cite: CITATION.cff, and each release is archived on Zenodo with its own DOI.
+- The code is easier to read: the CSS and JavaScript of index.html are laid out one statement per line, and ARCHITECTURE.md is a map of the file for anyone who wants to change it.
+
+## 1.2
 
 - Opening CDXML and CDX files:
   - a bold double or triple bond stays double or triple, its main line bold;
@@ -48,4 +60,4 @@ Every download carries `Reactio Draw - Getting started.pdf` (every function and 
 
 - The Windows program is not signed with a certificate: Windows may say “Windows protected your PC” (More info → Run anyway).
 - The Mac app is built on your own Mac by the installer (Apple's free Command Line Tools), so macOS does not block it.
-- Paste name reads about 500 built-in names and abbreviations without extra software; other names need Java (OPSIN). Name it needs Python with openclatura and Java (each name is read back with OPSIN to check it). Everything else works without extra software, and nothing goes online.
+- Paste name reads about 600 built-in names and abbreviations without extra software; other names need Java (OPSIN). Name it needs Python with openclatura and Java (each name is read back with OPSIN to check it). Everything else works without extra software, and nothing goes online.
