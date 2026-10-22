@@ -4,6 +4,11 @@ A free chemical structure and reaction editor for organic chemists. Draw with th
 reagent table for every reaction (equivalents, masses, volumes, yield), predict NMR, and move drawings into Word
 and PowerPoint or to and from other chemistry editors as CDXML and CDX files. It also helps you check HRMS data.
 
+> **This is a fork** of [Paivel/reactio-draw](https://github.com/Paivel/reactio-draw) (Reactio Draw 1.3) that adds
+> **XYZ export for quantum chemistry**: a drawing, or a ChemDraw CDX/CDXML file, becomes 3D coordinates ready
+> for ORCA, Gaussian or xtb. See [XYZ export](#xyz-export-for-quantum-chemistry-this-fork) below. Everything else is
+> the original program. The apps under the download link are the original version, without the XYZ export.
+
 | [▶ Open in the browser](https://github.com/Onelightayear/reactio-draw/tree/main/web) | [⬇ Apps for Windows, Mac and Linux](https://github.com/Paivel/reactio-draw/releases/latest) | [📖 Guide (PDF)](docs/Reactio%20Draw%20-%20Getting%20started.pdf) |
 | :---: | :---: | :---: |
 | nothing to install | work fully offline | every function and button explained |
@@ -28,6 +33,42 @@ https://github.com/user-attachments/assets/1637fe6d-b6d1-4ec5-9d68-9a41d62ef0c8
 | **Styles** | ACS, RSC, Nature, Angewandte and more, colour themes (one of them color-blind safe), dark sheets |
 | **Light** | the whole editor is one web page of 4.0 MB (about 1.4 MB over the network; 6.2 MB as a single offline file with the NMR tables), with no server and nothing to install; the apps are about 20–28 MB to download. The NMR tables (2.2 MB) come only when you first predict a spectrum. For comparison, the Ketcher npm package is about 110 MB and Kekule.js about 42 MB |
 
+
+## XYZ export for quantum chemistry (this fork)
+
+**Where:** File → Export as → **XYZ**, or Copy to clipboard → **XYZ** to paste straight into an input file. Scripts
+use `export {format: "xyz"}` in the [API](EMBEDDING.md#3d-coordinates-for-quantum-chemistry), and the command line
+`reactio convert molecule.cdx -o molecule.xyz`.
+
+**What it does** with every structure on the sheet (or only the selected ones):
+
+1. Abbreviations (OMe, Ph, Boc…) are expanded into atoms and hydrogens are added.
+2. Up to 20 conformers are built from OpenChemLib's torsion library, each is minimised with the MMFF94s+ force
+   field, and the lowest in energy is kept. The whole export has a 30 s budget, shared over the structures.
+3. The drawn stereocentres (wedges and hashes) and E/Z double bonds are compared with the 3D result.
+4. Each connected structure becomes one frame of a multi-frame `.xyz` file; the ions of a salt come out one by one.
+   The comment line carries the charge and spin multiplicity, which the XYZ format cannot otherwise hold:
+
+```
+33
+compound 1 C13H18O2 charge=0 mult=1 E(MMFF94s+)=23.790 kcal/mol
+C        5.174831     -0.219423      1.567543
+...
+```
+
+A box at the bottom right shows which structure and conformer is being worked on, with **Cancel**; when it is
+done it lists anything that needs a look and offers **Save .xyz** and **Copy**.
+
+**Good to know:**
+
+- The result is a starting geometry, not an optimised one: refine it with xtb or DFT before you trust energies.
+- MMFF94 has no parameters for boron, metals and some other elements. Such structures still get a 3D shape, marked
+  *not minimised* in the box and in the file, and should be refined with xtb (GFN2 or GFN-FF) or DFT.
+- A stereocentre or double bond left undrawn gets one configuration picked for it, and the box says so.
+- It runs offline in a background worker and needs nothing installed: it uses the OpenChemLib already in the page.
+
+**Try it:** download [`index.html`](index.html) from this repository and open it in Chrome, Edge or Firefox. For
+the Windows app, build it from this repository as described under [Building](#building).
 
 ## Download
 
@@ -130,3 +171,7 @@ Third-party components and their licences: `THIRD-PARTY-NOTICES.md` and the `LIC
 
 Made with the help of Claude (Anthropic).
 Questions, ideas and bug reports: [Issues](https://github.com/Paivel/reactio-draw/issues).
+
+**Changes in this fork** (as the AGPL asks of modified versions): October 2026, the XYZ export for quantum
+chemistry (`xyz3D`, `xyzExport`, `xyzMenu` in `index.html`; `export {format: "xyz"}` in the API; `.xyz` in the
+command line), by Onelightayear. The original program is by Pavel Sakharov.
