@@ -171,7 +171,6 @@ Third-party components and their licences: `THIRD-PARTY-NOTICES.md` and the `LIC
 
 Made with the help of Claude (Anthropic).
 Questions, ideas and bug reports: [Issues](https://github.com/Paivel/reactio-draw/issues).
-For the XYZ export of this fork: [Issues of the fork](https://github.com/Onelightayear/reactio-draw/issues).
 
 **Changes in this fork** (as the AGPL asks of modified versions): October 2026, the XYZ export for quantum
 chemistry (`xyz3D`, `xyzExport`, `xyzMenu` in `index.html`; `export {format: "xyz"}` in the API; `.xyz` in the
